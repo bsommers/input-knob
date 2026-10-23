@@ -71,7 +71,9 @@ graph TD
 - **Zero host software** — works on macOS, Windows, Linux, iOS and Android with no drivers.
 - **Screen that explains itself** — the top shows the link (USB / Bluetooth / pairing), the middle shows the mode and the last action, and the bottom hints what click and double-click do.
 - **USB and Bluetooth, automatic** — no switch to flip; Bluetooth pairing starts 3 s after USB goes away.
-- **Three modes, one gesture set** — Volume, Scroll and Macro all use turn / click / double-click / long press.
+- **Four modes, one gesture set** — Volume, Scroll, Macro and Trackpad all use turn / click / double-click / long press, plus tap and swipe on the screen.
+- **A trackpad in the knob** — drag on the round screen to move the cursor, tap to click, hold to right-click.
+- **An LED ring that talks back** — mode colours, a needle that follows your turn, flashes for mute and macros.
 - **Easy to customise** — add a shortcut by adding one line to each of two tables in `macros.h`.
 
 ---
@@ -110,7 +112,7 @@ sequenceDiagram
 git clone https://github.com/bsommers/input-knob.git && cd input-knob
 git clone --depth 1 https://github.com/Elecrow-RD/CrowPanel-1.28inch-HMI-ESP32-Rotary-Display-240-240-IPS-Round-Touch-Knob-Screen.git /tmp/elecrow
 mkdir -p ~/Documents/Arduino/libraries
-cp -R /tmp/elecrow/example/Arduino/libraries/{lvgl,LovyanGFX,lv_conf.h} ~/Documents/Arduino/libraries/
+cp -R /tmp/elecrow/example/Arduino/libraries/{lvgl,LovyanGFX,Adafruit_NeoPixel,lv_conf.h} ~/Documents/Arduino/libraries/
 ./upload.sh     # knob plugged in; it restarts into Volume mode
 ```
 

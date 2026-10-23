@@ -8,7 +8,7 @@ Adjusting volume, scrolling a long page or firing a common shortcut means reachi
 
 ## Solution
 
-Firmware that makes the CrowPanel enumerate as a standard HID keyboard + mouse + media-key device, with three modes you cycle through using a long press. Because it uses only standard HID reports, macOS, Windows, Linux, iOS, iPadOS and Android all accept it without drivers. The screen shows what the knob will do next and how it's connected.
+Firmware that makes the CrowPanel enumerate as a standard HID keyboard + mouse + media-key device, with four modes (Volume, Scroll, Macro, Trackpad) you cycle through with a long press or a swipe. Because it uses only standard HID reports, macOS, Windows, Linux, iOS, iPadOS and Android all accept it without drivers. The screen shows what the knob will do next and how it's connected.
 
 ---
 
@@ -47,6 +47,8 @@ Firmware that makes the CrowPanel enumerate as a standard HID keyboard + mouse +
 - [ ] Recovers from Mac sleep/wake without a replug (implemented, untested)
 - [ ] Mac/PC shortcut switch verified on Windows
 - [ ] Verified on iOS / Android over Bluetooth
+- [x] Touch trackpad (move, left/right click) and swipe gestures working
+- [x] LED ring: mode glow, turn needle, action flashes
 
 ---
 
@@ -58,6 +60,7 @@ Built in October 2026 on Elecrow's own examples (pin map, LovyanGFX panel settin
 2. A fix for a false "USB not connected" status (the core starts USB before `setup()`), plus a reconnect watchdog after the knob was found stuck unmounted following a Mac sleep/wake.
 3. Bluetooth LE HID with automatic switching, and runtime Mac/PC shortcut tables.
 4. `upload.sh`, which clears the ESP32-S3 force-download flag so the knob boots after every upload.
+5. Touch panel (Trackpad mode, tap and swipe gestures) and the LED ring.
 
 ---
 

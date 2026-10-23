@@ -32,13 +32,16 @@ SNIPPETS = [
     ("01-pin-map", "board.h", 7, 32, "The hardware pin map"),
     ("02-encoder-isr", "knob.cpp", 9, 48, "Encoder: quadrature decoding in an interrupt"),
     ("03-button-gestures", "knob.cpp", 50, 92, "Button: click, double-click and long press"),
-    ("04-mode-actions", "input-knob.ino", 50, 73, "What a turn does in each mode"),
+    ("04-mode-actions", "input-knob.ino", 83, 104, "What a turn does in each mode"),
     ("05-router", "hid.cpp", 13, 50, "Routing every action to USB or Bluetooth"),
     ("06-usb-watchdog", "usb_hid.cpp", 36, 65, "Recovering USB after the computer sleeps"),
     ("07-ble-report-map", "ble_hid.cpp", 13, 41, "Bluetooth HID report map: keyboard, mouse, media keys"),
     ("08-macros", "macros.h", 9, 38, "Mac and PC shortcut tables"),
     ("09-display-config", "display.cpp", 10, 42, "Driving the round GC9A01 display"),
     ("10-upload-fix", "upload.sh", 1, 49, "upload.sh: no more dark screen after flashing"),
+    ("11-touch-gestures", "touch.cpp", 59, 100, "Touch: taps, holds and swipes from raw coordinates"),
+    ("12-trackpad", "input-knob.ino", 152, 167, "Trackpad mode: cursor, left and right click"),
+    ("13-led-ring", "leds.cpp", 62, 86, "LED ring: flashes, pairing breath, mode glow and needle"),
 ]
 
 NOTES = {
@@ -51,6 +54,9 @@ NOTES = {
     "07-ble-report-map": "The Bluetooth HID report map: one descriptor that declares three devices (a keyboard, a mouse with vertical and horizontal wheels, and a consumer-control device for media keys). Hosts read this once at pairing and then accept raw reports, the same bytes the USB side sends.",
     "08-macros": "Shortcuts are plain data: a name, modifier keys and one key code. There's a Mac table and a PC table of the same length (a static_assert enforces it), and a double-click in Macro mode switches between them. The choice is saved in flash.",
     "09-display-config": "LovyanGFX drives the 240x240 round GC9A01 over SPI at 80 MHz with colour inversion on, matching Elecrow's working example. LVGL 9 draws into two 40-line buffers in PSRAM and this driver pushes them to the panel.",
+    "11-touch-gestures": "The touch chip can recognise gestures itself, but this code works from raw coordinates every 10 ms so touch uses the same timings as the knob. Barely moving is a tap, or a long press after 600 ms (fired while you hold). Travelling 50 px along one axis is a swipe. Every poll also reports how far the finger moved, which drives the trackpad.",
+    "12-trackpad": "Trackpad mode in a few lines: finger movement becomes cursor movement, with acceleration so slow drags are precise and fast flicks cross the screen. A tap is a left click and a touch-and-hold is a right click. Turning the knob scrolls.",
+    "13-led-ring": "Each frame (about 50 per second) the LED ring picks one effect: an action flash fading over 300 ms wins; otherwise orange breathing while Bluetooth is pairing; otherwise a dim glow in the mode colour, with one brighter 'needle' LED that steps with each click of the knob and fades back.",
     "10-upload-fix": "Uploading over the knob's own USB port reboots the ESP32-S3 with a 'force download boot' flag set. The bundled esptool 4.6 resets without clearing it, so the knob came back with a dark screen until it was unplugged. This script uploads, then writes 0 to that one register bit and resets, so the new firmware starts immediately.",
 }
 
@@ -123,6 +129,7 @@ SCREENS = [
     ("screen-macro-pc", "usb", "Macro (PC)", ORANGE, "Task View", "click run | 2x Mac/PC", 8, "Double-click switches to PC shortcuts"),
     ("screen-bt-pairing", "pairing", "Volume", BLUE, "Turn me", "click mute | 2x play", 0, "On a charger: advertising over Bluetooth"),
     ("screen-bt-connected", "bt", "Volume", BLUE, "Vol -", "click mute | 2x play", -2, "Paired and working over Bluetooth"),
+    ("screen-trackpad", "usb", "Trackpad", "#9B59B6", "Drag here", "tap click | hold right", 0, "Trackpad mode: drag to move, tap to click"),
     ("screen-no-connection", "none", "Volume", BLUE, "Turn me", "click mute | 2x play", 0, "No USB host and Bluetooth not connected"),
 ]
 

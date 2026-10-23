@@ -60,8 +60,9 @@ static void send(BLECharacteristic *input, const uint8_t *report, size_t length)
   input->notify();
 }
 
-static void sendMouse(uint8_t buttons, int8_t wheel, int8_t pan) {
-  const uint8_t report[] = {buttons, 0, 0, static_cast<uint8_t>(wheel), static_cast<uint8_t>(pan)};
+static void sendMouse(uint8_t buttons, int8_t dx, int8_t dy, int8_t wheel, int8_t pan) {
+  const uint8_t report[] = {buttons, static_cast<uint8_t>(dx), static_cast<uint8_t>(dy),
+                            static_cast<uint8_t>(wheel), static_cast<uint8_t>(pan)};
   send(mouseInput, report, sizeof(report));
 }
 
@@ -113,11 +114,13 @@ void consumer(uint16_t usage) {
   send(consumerInput, released, sizeof(released));
 }
 
-void scroll(int8_t vertical, int8_t horizontal) { sendMouse(0, vertical, horizontal); }
+void move(int8_t dx, int8_t dy) { sendMouse(0, dx, dy, 0, 0); }
+
+void scroll(int8_t vertical, int8_t horizontal) { sendMouse(0, 0, 0, vertical, horizontal); }
 
 void click(uint8_t buttons) {
-  sendMouse(buttons, 0, 0);
-  sendMouse(0, 0, 0);
+  sendMouse(buttons, 0, 0, 0, 0);
+  sendMouse(0, 0, 0, 0, 0);
 }
 
 void keys(uint8_t modifiers, uint8_t key) {

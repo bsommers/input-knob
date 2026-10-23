@@ -25,7 +25,7 @@ arduino-cli core install esp32:esp32
 # Libraries: use the exact versions Elecrow ships, and their lv_conf.h
 git clone --depth 1 https://github.com/Elecrow-RD/CrowPanel-1.28inch-HMI-ESP32-Rotary-Display-240-240-IPS-Round-Touch-Knob-Screen.git /tmp/elecrow
 mkdir -p ~/Documents/Arduino/libraries
-cp -R /tmp/elecrow/example/Arduino/libraries/{lvgl,LovyanGFX,lv_conf.h} ~/Documents/Arduino/libraries/
+cp -R /tmp/elecrow/example/Arduino/libraries/{lvgl,LovyanGFX,Adafruit_NeoPixel,lv_conf.h} ~/Documents/Arduino/libraries/
 
 # Get the firmware and check it compiles (board settings come from sketch.yaml)
 git clone https://github.com/bsommers/input-knob.git && cd input-knob
@@ -226,6 +226,25 @@ arduino-cli monitor -p /dev/cu.usbmodem<id> -c baudrate=115200
 
 **Cause**: The knob is on a computer's USB port, so USB took over and Bluetooth advertising is off.
 **Fix**: Power it from a charger or power bank.
+
+### Trackpad cursor moves the wrong way, or too fast or slow
+
+**Cause**: Touch axes or speed don't suit your setup.
+**Fix**: Adjust `TRACKPAD_GAIN` and `TRACKPAD_ACCELERATION` in `config.h`. For reversed axes, negate `touch.dx` / `touch.dy` in `onTrackpadTouch()` in `input-knob.ino`.
+
+### Right click (touch and hold) acts as a drag
+
+**Cause**: The finger moved more than `TOUCH_TAP_SLOP_PX` (12 px) during the hold.
+**Fix**: Raise `TOUCH_TAP_SLOP_PX` to about 20 in `config.h`.
+
+### Touch does nothing
+
+**Cause**: The CST816D didn't answer at start-up. The serial log shows `[touch] CST816D not responding`.
+**Fix**: Power-cycle the knob. If it persists, check that `board.h` still has touch SDA 6, SCL 7, RST 13, INT 5.
+
+### LED needle walks against the knob
+
+**Fix**: Set `LED_RING_REVERSED = true` in `config.h`.
 
 ### Clockwise turns the volume down
 

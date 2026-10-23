@@ -66,11 +66,21 @@ void scroll(int8_t vertical, int8_t horizontal) {
   }
 }
 
-void middleClick() {
+void moveCursor(int dx, int dy) {
+  const int8_t x = constrain(dx, -127, 127);
+  const int8_t y = constrain(dy, -127, 127);
   if (useUsb()) {
-    usbhid::click(MOUSE_BUTTON_MIDDLE);
+    usbhid::move(x, y);
   } else if (useBluetooth()) {
-    blehid::click(MOUSE_BUTTON_MIDDLE);
+    blehid::move(x, y);
+  }
+}
+
+void click(uint8_t buttons) {
+  if (useUsb()) {
+    usbhid::click(buttons);
+  } else if (useBluetooth()) {
+    blehid::click(buttons);
   }
 }
 

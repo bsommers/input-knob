@@ -41,7 +41,7 @@ Input Knob is a single Arduino sketch running on an ESP32-S3. It is a polling su
 **Interfaces**: Arduino `setup()` / `loop()`.
 **Dependencies**: `knob.h`, `hid.h`, `ui.h`, `display.h`, `macros.h`, `config.h`, `Preferences` (NVS).
 
-State: `mode` (Volume / Scroll / Macro), `horizontalScroll`, `selectedMacro`, `macShortcuts` (persisted under NVS namespace `input-knob`, key `mac`), and `shownLink` (last link state drawn).
+State: `mode` (Volume / Scroll / Macro / Trackpad), `horizontalScroll`, `selectedMacro`, `macShortcuts` (persisted under NVS namespace `input-knob`, key `mac`), and `shownLink` (last link state drawn).
 
 ### Input (`knob.h`, `knob.cpp`)
 
@@ -54,7 +54,7 @@ State: `mode` (Volume / Scroll / Macro), `horizontalScroll`, `selectedMacro`, `m
 
 ### HID router (`hid.h`, `hid.cpp`)
 
-**Responsibility**: Expose host actions (`volume`, `mute`, `playPause`, `scroll`, `middleClick`, `runMacro`) and choose a transport for each one.
+**Responsibility**: Expose host actions (`volume`, `mute`, `playPause`, `scroll`, `moveCursor`, `click`, `runMacro`) and choose a transport for each one.
 **Interfaces**: `hid::begin()`, `hid::service()`, `hid::link()` → `None | Usb | Bluetooth | Pairing`.
 **Dependencies**: `usb_hid.h`, `ble_hid.h`, `keys.h`, `macros.h`.
 
@@ -63,7 +63,7 @@ Routing rule: if `usbhid::mounted()` → USB; else if `blehid::connected()` → 
 ### USB transport (`usb_hid.h`, `usb_hid.cpp`)
 
 **Responsibility**: TinyUSB composite HID (consumer control + keyboard + mouse), plus a watchdog that recovers lost enumeration.
-**Interfaces**: `begin`, `service`, `mounted`, `consumer(usage)`, `scroll(v, h)`, `click(buttons)`, `keys(modifiers, key)`.
+**Interfaces**: `begin`, `service`, `mounted`, `consumer(usage)`, `move(dx, dy)`, `scroll(v, h)`, `click(buttons)`, `keys(modifiers, key)`.
 **Dependencies**: Arduino core `USB`, `USBHIDConsumerControl`, `USBHIDKeyboard`, `USBHIDMouse`, `esp32-hal-tinyusb.h`.
 
 `#error`s at compile time unless the board is built with `USB Mode = USB-OTG (TinyUSB)`.
@@ -71,7 +71,7 @@ Routing rule: if `usbhid::mounted()` → USB; else if `blehid::connected()` → 
 ### Bluetooth transport (`ble_hid.h`, `ble_hid.cpp`)
 
 **Responsibility**: HID over GATT using the core's Bluedroid `BLE` library.
-**Interfaces**: same four send functions as USB, plus `connected`, `advertising`, `setAdvertising(bool)`.
+**Interfaces**: same send functions as USB (`consumer`, `move`, `scroll`, `click`, `keys`), plus `connected`, `advertising`, `setAdvertising(bool)`.
 **Dependencies**: `BLEDevice`, `BLEHIDDevice`, `BLESecurity`, `BLEServer`.
 
 One report map with three report IDs: keyboard (1), mouse with wheel and horizontal pan (2), and consumer control (3). Pairing is "Just Works" with bonding (`ESP_LE_AUTH_BOND`), advertised with the keyboard appearance (`0x03C1`) under the name **Input Knob**.
@@ -93,6 +93,23 @@ Screen layout (240x240 round):
             │              click mute | 2x play       ← hint (14pt, grey)    │
             ╰────────────────────────────────────────────────────────────────╯
 ```
+
+### Touch (`touch.h`, `touch.cpp`)
+
+**Responsibility**: Read the CST816D over I2C (`Wire1`, GPIO6/7, address `0x15`) every 10 ms and turn raw coordinates into gestures.
+**Interfaces**: `touchBegin()`, `TouchUpdate touchPoll()` → `{gesture, dx, dy}` with gestures `Tap | LongPress | SwipeLeft | SwipeRight | SwipeUp | SwipeDown`.
+**Dependencies**: `Wire`, `board.h`, `config.h`.
+
+The chip has its own gesture recognition, but this module ignores it and works from coordinates so touch uses the same timings as the knob button: movement under `TOUCH_TAP_SLOP_PX` is a tap (or a long press after `BUTTON_LONG_PRESS_MS`, fired while held); otherwise the release is a swipe if it travelled `TOUCH_SWIPE_MIN_PX` along one axis. Drag deltas are reported on every poll for the trackpad. Auto-sleep is disabled at start-up (register `0xFE`) so the chip keeps answering.
+
+Mode handling in `input-knob.ino`: in **Trackpad** mode, drags move the cursor (with acceleration), tap = left click and long press = right click. In other modes, tap = knob click, swipe left/right = next/previous mode, and swipe up/down = page scroll (Scroll) or next/previous shortcut (Macro).
+
+### LED ring (`leds.h`, `leds.cpp`)
+
+**Responsibility**: Drive the 5 WS2812B LEDs on GPIO48 with Adafruit NeoPixel at about 50 fps.
+**Interfaces**: `ledsBegin()`, `ledsLoop()`, `ledsSetModeColor()`, `ledsSetLink()`, `ledsTurn()`, `ledsFlash()`.
+
+Priority per frame: an action flash (fading over 300 ms) beats everything; otherwise orange breathing while Bluetooth is pairing; otherwise a 15% glow in the mode colour, with one "needle" LED that steps with each detent and fades back over 1.5 s. Losing a USB or Bluetooth connection triggers a red flash. All levels are scaled by `LED_BRIGHTNESS`.
 
 ### Static tables (`board.h`, `config.h`, `keys.h`, `macros.h`)
 
@@ -174,6 +191,10 @@ graph TD
     INO --> DISP[display.cpp]
     INO --> HID[hid.cpp]
     INO --> PREF[(Preferences / NVS)]
+    INO --> TOUCH[touch.cpp]
+    INO --> LEDS[leds.cpp]
+    TOUCH --> WIRE[[Wire I2C / CST816D]]
+    LEDS --> NEO[[Adafruit NeoPixel]]
     UI --> LVGL[[LVGL 9.1.0]]
     DISP --> LVGL
     DISP --> LGFX[[LovyanGFX 1.2.26]]
@@ -228,6 +249,7 @@ graph TD
 | esp32 by Espressif (Arduino core) | Board package | Toolchain, TinyUSB, Bluedroid BLE, Preferences | 3.0.7 tested (Elecrow targets 3.3.8) |
 | LVGL | Library | UI widgets and rendering | 9.1.0 (with Elecrow's `lv_conf.h`) |
 | LovyanGFX | Library | GC9A01 SPI driver | 1.2.26 |
+| Adafruit NeoPixel | Library | WS2812B LED ring | 1.15.1 |
 | esptool | Tool (bundled with core) | Flashing; `upload.sh` also clears the force-download flag | 4.6 |
 
 ---
@@ -235,7 +257,8 @@ graph TD
 ## Performance Characteristics
 
 - Super-loop with `delay(2)`; LVGL renders in partial mode into two 240x40 RGB565 buffers (~19 KB each) in PSRAM, falling back to internal RAM.
-- Flash use: about 1.34 MB of the 3 MB app partition (42%), mostly Bluedroid.
+- Flash use: about 1.37 MB of the 3 MB app partition (43%), mostly Bluedroid.
+- Touch is polled every 10 ms (one 5-byte I2C read); the LED ring refreshes every 20 ms.
 - Each HID send blocks for at most the core's report timeout (100 ms) if the host isn't reading.
 
 ---
@@ -255,5 +278,6 @@ graph TD
 - **Sleep recovery unverified.** The USB watchdog is implemented but hasn't yet been tested against a real Mac sleep/wake cycle.
 - **USB name** shows as `ESP32S3_DEV` rather than "Input Knob".
 - **Uploads can leave the board in download mode** (dark screen) because the core's reboot-to-bootloader sets `RTC_CNTL_FORCE_DOWNLOAD_BOOT` and esptool 4.6 doesn't clear it. `upload.sh` clears it; the Arduino IDE's Upload button doesn't, so replug after using it.
-- **Unused hardware**: the CST816D touch panel, the 5-LED WS2812 ring on GPIO48, and the external header rail.
+- **Unused hardware**: the external UART/I2C header rail (powered, but nothing reads it).
+- **Touch while turning**: the touch panel sits inside the knob, so a finger resting on the glass while turning can register as a tap or swipe.
 - **Battery level** over Bluetooth is a fixed 100%; the board has no battery.

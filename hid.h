@@ -17,6 +17,7 @@ void volume(int steps);  // positive = up
 void mute();
 void playPause();
 void scroll(int8_t vertical, int8_t horizontal);
-void middleClick();
+void moveCursor(int dx, int dy);  // clamped to one report (+/-127)
+void click(uint8_t buttons);      // MOUSE_BUTTON_* from keys.h
 void runMacro(const Macro &macro);
 }  // namespace hid

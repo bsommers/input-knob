@@ -1,8 +1,8 @@
 # Input Knob
 
-> Turn an Elecrow CrowPanel 1.28" ESP32-S3 rotary display into a volume, scroll and shortcut knob for your computer, phone or tablet, over USB or Bluetooth.
+> Turn an Elecrow CrowPanel 1.28" ESP32-S3 rotary display into a volume, scroll, shortcut and mini-trackpad knob for your computer, phone or tablet, over USB or Bluetooth.
 
-Arduino + LVGL firmware for the **Elecrow CrowPanel 1.28" HMI ESP32 Rotary Display** (240x240 round GC9A01 screen, rotary encoder with push button). The knob shows up as an ordinary keyboard + mouse + media-key device, so the host needs no driver or companion app. It is not a general macro-pad framework: there are three fixed modes, and shortcuts are edited in code.
+Arduino + LVGL firmware for the **Elecrow CrowPanel 1.28" HMI ESP32 Rotary Display** (240x240 round GC9A01 touch screen, rotary encoder with push button, 5-LED ring). The knob shows up as an ordinary keyboard + mouse + media-key device, so the host needs no driver or companion app. It is not a general macro-pad framework: there are four fixed modes, and shortcuts are edited in code.
 
 ---
 
@@ -14,10 +14,10 @@ You need the knob, a USB-C data cable, a Mac (Windows/Linux work too; see [HOWTO
 # 1. Get the code
 git clone https://github.com/bsommers/input-knob.git && cd input-knob
 
-# 2. Install the exact LVGL / LovyanGFX versions Elecrow ships, plus lv_conf.h
+# 2. Install the exact LVGL / LovyanGFX / NeoPixel versions Elecrow ships, plus lv_conf.h
 git clone --depth 1 https://github.com/Elecrow-RD/CrowPanel-1.28inch-HMI-ESP32-Rotary-Display-240-240-IPS-Round-Touch-Knob-Screen.git /tmp/elecrow
 mkdir -p ~/Documents/Arduino/libraries
-cp -R /tmp/elecrow/example/Arduino/libraries/{lvgl,LovyanGFX,lv_conf.h} ~/Documents/Arduino/libraries/
+cp -R /tmp/elecrow/example/Arduino/libraries/{lvgl,LovyanGFX,Adafruit_NeoPixel,lv_conf.h} ~/Documents/Arduino/libraries/
 
 # 3. Plug the knob in and upload (board settings come from sketch.yaml)
 ./upload.sh
@@ -34,7 +34,10 @@ The screen lights up with **Volume** in blue and **USB** in green at the top. Tu
 - **Controls volume**: turn for volume up/down, click to mute, double-click to play/pause.
 - **Scrolls**: turn for the scroll wheel, click for middle-click, double-click to switch vertical/horizontal.
 - **Fires shortcuts**: turn to pick Copy, Paste, Undo, Redo, Screenshot, Mission Control / Task View or Lock; click to send it. Double-click switches between Mac (Cmd) and PC (Ctrl/Win) shortcuts, and the choice survives power-off.
-- **Switches modes** with a long press.
+- **Acts as a mini trackpad**: in Trackpad mode, drag on the screen to move the cursor, tap to left-click, touch and hold to right-click, turn the knob to scroll.
+- **Responds to touch everywhere**: tap = knob click, swipe left/right = change mode, swipe up/down = page scroll (Scroll mode) or next/previous shortcut (Macro mode).
+- **Lights the LED ring**: a soft glow in the mode's colour, a needle that follows the knob, flashes for mute and macros, orange breathing while Bluetooth is pairing, and a red pulse if the connection drops.
+- **Switches modes** with a long press of the knob or a swipe.
 - **Picks USB or Bluetooth automatically**: USB when a computer is on the cable, otherwise Bluetooth LE as **Input Knob** (on a charger or power bank).
 - **Recovers after host sleep**: re-attaches to USB if the computer's sleep/wake drops the connection (implemented, not yet verified on a real sleep cycle; replug if it gets stuck).
 
@@ -78,6 +81,8 @@ input-knob/
 ├── board.h          — GPIO map for the CrowPanel 1.28"
 ├── config.h         — tunables: encoder direction, button timing, scroll speed, brightness
 ├── knob.h/.cpp      — interrupt-driven encoder; click / double-click / long-press detection
+├── touch.h/.cpp     — CST816D touch panel: taps, long press, swipes, drag deltas
+├── leds.h/.cpp      — WS2812 LED ring: mode glow, turn needle, flashes, pairing breathing
 ├── hid.h/.cpp       — input actions, routed to USB or Bluetooth
 ├── usb_hid.h/.cpp   — USB HID (TinyUSB) + reconnect-after-host-sleep watchdog
 ├── ble_hid.h/.cpp   — Bluetooth LE HID (HID over GATT)
@@ -104,6 +109,12 @@ Compile-time settings in `config.h`:
 | `BUTTON_LONG_PRESS_MS` | `600` | Hold time that switches mode |
 | `SCROLL_LINES_PER_DETENT` | `1` | Wheel units per encoder click |
 | `BACKLIGHT_PERCENT` | `60` | Screen brightness |
+| `TOUCH_TAP_SLOP_PX` | `12` | Finger movement still counted as a tap or hold |
+| `TOUCH_SWIPE_MIN_PX` | `50` | Distance a swipe must travel |
+| `TRACKPAD_GAIN` / `TRACKPAD_ACCELERATION` | `2.0` / `0.15` | Cursor speed and acceleration |
+| `SWIPE_SCROLL_LINES` | `10` | Wheel units per swipe in Scroll mode |
+| `LED_BRIGHTNESS` | `60` | LED ring brightness cap (0–255) |
+| `LED_RING_REVERSED` | `false` | Flip if the LED needle runs against the knob |
 
 Shortcuts live in `macros.h`. Runtime setting: Mac/PC shortcuts (double-click in Macro mode), stored in flash.
 

@@ -7,10 +7,10 @@ Sources for generating a video overview, slide deck, audio overview or other art
 | Source | What it gives NotebookLM |
 |---|---|
 | `01-explainer-script.md` | Scene-by-scene narration, slide outlines and a key-facts list. **Upload first.** |
-| `02-code-snippets.md` | Ten annotated code excerpts, copied verbatim from the firmware |
-| `images/screen-*.png` (9) | Illustrations of the knob's screen in each mode and connection state |
+| `02-code-snippets.md` | Thirteen annotated code excerpts, copied verbatim from the firmware |
+| `images/screen-*.png` (10) | Illustrations of the knob's screen in each mode and connection state |
 | `images/diagram-*.png` (4) | System flow, USB/Bluetooth state machine, turn-to-host sequence, module graph |
-| `images/code-*.png` (10) | Syntax-highlighted code, matching `02-code-snippets.md` |
+| `images/code-*.png` (13) | Syntax-highlighted code, matching `02-code-snippets.md` |
 | `../README.md`, `../docs/*.md` | Optional: full project docs for deeper answers |
 
 Markdown files can be uploaded directly, or pasted as "Copied text". If your NotebookLM doesn't accept images as sources, keep them for editing the generated slides and video yourself.

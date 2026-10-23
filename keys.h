@@ -32,4 +32,6 @@ constexpr uint16_t VOLUME_UP = 0x00E9;
 constexpr uint16_t VOLUME_DOWN = 0x00EA;
 }  // namespace media
 
+constexpr uint8_t MOUSE_BUTTON_LEFT = 0x01;
+constexpr uint8_t MOUSE_BUTTON_RIGHT = 0x02;
 constexpr uint8_t MOUSE_BUTTON_MIDDLE = 0x04;

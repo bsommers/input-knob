@@ -140,30 +140,28 @@ ButtonEvent buttonPoll() {
 
 ## 4. What a turn does in each mode
 
-`input-knob.ino`, lines 50–73 · image: `images/code-04-mode-actions.png`
+`input-knob.ino`, lines 83–104 · image: `images/code-04-mode-actions.png`
 
 The whole personality of the knob: one switch on the current mode. Volume sends media keys, Scroll sends mouse-wheel steps (clockwise scrolls down), Macro moves through the shortcut list. The dial ring and labels update on every turn.
 
 ```cpp
 static void onTurn(int detents) {
   uiTurn(detents);
+  ledsTurn(detents);
   switch (mode) {
     case Mode::Volume:
       hid::volume(detents);
       uiSetValue(detents > 0 ? "Vol +" : "Vol -");
       break;
-    case Mode::Scroll: {
-      const int8_t amount = static_cast<int8_t>(constrain(detents * SCROLL_LINES_PER_DETENT, -127, 127));
-      if (horizontalScroll) {
-        hid::scroll(0, amount);
-      } else {
-        hid::scroll(-amount, 0);  // clockwise scrolls down
-      }
+    case Mode::Scroll:
+      scrollBy(detents * SCROLL_LINES_PER_DETENT);
       break;
-    }
     case Mode::Macro:
       selectedMacro = ((selectedMacro + detents) % MACRO_COUNT + MACRO_COUNT) % MACRO_COUNT;
       uiSetValue(currentMacro().name);
+      break;
+    case Mode::Trackpad:
+      hid::scroll(-static_cast<int8_t>(constrain(detents * SCROLL_LINES_PER_DETENT, -127, 127)), 0);
       break;
     default:
       break;
@@ -432,4 +430,114 @@ port=$(espressif_port)
 echo "Clearing force-download flag and starting firmware via $port"
 "$ESPTOOL" --chip esp32s3 --port "$port" --after hard_reset \
   write_mem "$RTC_CNTL_OPTION1_REG" 0 "$FORCE_DOWNLOAD_BOOT"
+```
+
+## 11. Touch: taps, holds and swipes from raw coordinates
+
+`touch.cpp`, lines 59–100 · image: `images/code-11-touch-gestures.png`
+
+The touch chip can recognise gestures itself, but this code works from raw coordinates every 10 ms so touch uses the same timings as the knob. Barely moving is a tap, or a long press after 600 ms (fired while you hold). Travelling 50 px along one axis is a swipe. Every poll also reports how far the finger moved, which drives the trackpad.
+
+```cpp
+TouchUpdate touchPoll() {
+  static uint32_t lastPollMs = 0;
+  static bool down = false;
+  static bool moved = false;
+  static bool longFired = false;
+  static int16_t startX = 0, startY = 0, lastX = 0, lastY = 0;
+  static uint32_t downAtMs = 0;
+
+  TouchUpdate update = {TouchGesture::None, 0, 0};
+  const uint32_t now = millis();
+  if (now - lastPollMs < POLL_EVERY_MS) return update;
+  lastPollMs = now;
+
+  bool touching = false;
+  int16_t x = lastX, y = lastY;
+  if (!readPoint(&touching, &x, &y)) touching = false;
+
+  if (touching && !down) {
+    down = true;
+    moved = false;
+    longFired = false;
+    startX = lastX = x;
+    startY = lastY = y;
+    downAtMs = now;
+  } else if (touching) {
+    update.dx = x - lastX;
+    update.dy = y - lastY;
+    lastX = x;
+    lastY = y;
+    if (abs(x - startX) > TOUCH_TAP_SLOP_PX || abs(y - startY) > TOUCH_TAP_SLOP_PX) moved = true;
+    if (!moved && !longFired && now - downAtMs >= BUTTON_LONG_PRESS_MS) {
+      longFired = true;
+      update.gesture = TouchGesture::LongPress;
+    }
+  } else if (down) {
+    down = false;
+    if (!longFired) {
+      update.gesture = moved ? swipe(lastX - startX, lastY - startY) : TouchGesture::Tap;
+    }
+  }
+  return update;
+}
+```
+
+## 12. Trackpad mode: cursor, left and right click
+
+`input-knob.ino`, lines 152–167 · image: `images/code-12-trackpad.png`
+
+Trackpad mode in a few lines: finger movement becomes cursor movement, with acceleration so slow drags are precise and fast flicks cross the screen. A tap is a left click and a touch-and-hold is a right click. Turning the knob scrolls.
+
+```cpp
+static int accelerate(int16_t delta) {
+  return lroundf(delta * (TRACKPAD_GAIN + TRACKPAD_ACCELERATION * abs(delta)));
+}
+
+static void onTrackpadTouch(const TouchUpdate &touch) {
+  if (touch.dx != 0 || touch.dy != 0) hid::moveCursor(accelerate(touch.dx), accelerate(touch.dy));
+  if (touch.gesture == TouchGesture::Tap) {
+    hid::click(MOUSE_BUTTON_LEFT);
+    uiSetValue("Click");
+    ledsFlash(modeColor());
+  } else if (touch.gesture == TouchGesture::LongPress) {
+    hid::click(MOUSE_BUTTON_RIGHT);
+    uiSetValue("Right click");
+    ledsFlash(modeColor());
+  }
+}
+```
+
+## 13. LED ring: flashes, pairing breath, mode glow and needle
+
+`leds.cpp`, lines 62–86 · image: `images/code-13-led-ring.png`
+
+Each frame (about 50 per second) the LED ring picks one effect: an action flash fading over 300 ms wins; otherwise orange breathing while Bluetooth is pairing; otherwise a dim glow in the mode colour, with one brighter 'needle' LED that steps with each click of the knob and fades back.
+
+```cpp
+void ledsLoop() {
+  static uint32_t lastFrameMs = 0;
+  const uint32_t now = millis();
+  if (now - lastFrameMs < FRAME_MS) return;
+  lastFrameMs = now;
+
+  if (flashing && now - flashAtMs < FLASH_MS) {
+    ring.fill(dimmed(flashColor, 1.0f - static_cast<float>(now - flashAtMs) / FLASH_MS));
+    ring.show();
+    return;
+  }
+  flashing = false;
+
+  if (currentLink == hid::Link::Pairing) {
+    const float phase = static_cast<float>(now % BREATHE_PERIOD_MS) / BREATHE_PERIOD_MS;
+    ring.fill(dimmed(PAIRING_COLOR, 0.1f + 0.9f * (0.5f - 0.5f * cosf(2 * PI * phase))));
+  } else {
+    ring.fill(dimmed(modeColor, GLOW_LEVEL));
+    if (needleAtMs != 0 && now - needleAtMs < NEEDLE_FADE_MS) {
+      const float fade = 1.0f - static_cast<float>(now - needleAtMs) / NEEDLE_FADE_MS;
+      ring.setPixelColor(needle, dimmed(modeColor, GLOW_LEVEL + (1.0f - GLOW_LEVEL) * fade));
+    }
+  }
+  ring.show();
+}
 ```

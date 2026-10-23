@@ -69,6 +69,8 @@ void consumer(uint16_t usage) {
   if (!consumerDevice.release()) Serial.println("[usb] consumer release failed");
 }
 
+void move(int8_t dx, int8_t dy) { mouseDevice.move(dx, dy); }
+
 void scroll(int8_t vertical, int8_t horizontal) { mouseDevice.move(0, 0, vertical, horizontal); }
 
 void click(uint8_t buttons) { mouseDevice.click(buttons); }

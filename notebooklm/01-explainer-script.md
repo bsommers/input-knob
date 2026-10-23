@@ -25,7 +25,7 @@ How many times a day do you reach for volume? Mute before a call, skip a bit lou
 ## Scene 2 — The hardware (0:30–1:10)
 
 **Narration**
-The hardware is the Elecrow CrowPanel 1.28-inch rotary display. In the middle is a 240-by-240 round colour screen. Around it is a knob that clicks as you turn it, and the whole knob pushes down like a button. Inside is an ESP32-S3: a microcontroller with native USB and Bluetooth Low Energy, 16 megabytes of flash and 8 megabytes of PSRAM. There's also a touch panel and a ring of five RGB LEDs that this firmware doesn't use yet. Out of the box it runs a demo. Input Knob replaces that demo with something you'd actually use every day.
+The hardware is the Elecrow CrowPanel 1.28-inch rotary display. In the middle is a 240-by-240 round colour screen. Around it is a knob that clicks as you turn it, and the whole knob pushes down like a button. Inside is an ESP32-S3: a microcontroller with native USB and Bluetooth Low Energy, 16 megabytes of flash and 8 megabytes of PSRAM. The screen is also a touch panel, and there's a ring of five RGB LEDs, and Input Knob uses both. Out of the box it runs a demo. Input Knob replaces that demo with something you'd actually use every day.
 
 **On screen**: `images/code-01-pin-map.png` (the pin map), then `images/screen-volume-usb.png`.
 
@@ -33,7 +33,7 @@ The hardware is the Elecrow CrowPanel 1.28-inch rotary display. In the middle is
 - 240×240 round IPS screen (GC9A01)
 - Detented rotary encoder plus push button
 - ESP32-S3: native USB, Bluetooth LE, 16 MB flash, 8 MB PSRAM
-- Not yet used: CST816D touch panel, 5 WS2812 RGB LEDs
+- CST816D touch panel and 5 WS2812 RGB LEDs, both used
 
 ---
 
@@ -165,17 +165,17 @@ To build your own: install the Arduino IDE with the ESP32 board package, copy th
 
 ---
 
-## Scene 10 — What's next (7:15–7:45)
+## Scene 10 — Touch and light (7:15–7:50)
 
 **Narration**
-There's more hardware waiting to be used. The round screen is also a touch panel, which could become a tiny trackpad, a swipe-to-scroll surface, or a tap to change modes. The five RGB LEDs could glow in the current mode's colour, show the connection status, or pulse with the volume level. Input Knob is open source under the Apache 2.0 license, so the next feature could be yours.
+The round screen is also a touch panel, and the newest version uses it. A fourth mode, Trackpad, turns the screen into a tiny laptop trackpad: drag to move the cursor, tap to left-click, touch and hold to right-click, and turn the knob to scroll. In the other modes, a tap does the same as pressing the knob, a swipe left or right changes mode, and a swipe up or down scrolls a page or steps through the shortcut list. The five RGB LEDs glow in the current mode's colour, a brighter LED follows the knob like a needle, they flash red when you mute, and they breathe orange while Bluetooth is pairing. Input Knob is open source under the Apache 2.0 license, so the next feature could be yours.
 
 **On screen**: `images/screen-overview.png`.
 
-**Slide**: *Next*
-- Touch panel: mini trackpad, swipe scrolling, tap gestures
-- LED ring: mode colours, connection status, volume feedback
-- Verify sleep/wake recovery; test on Windows and phones
+**Slide**: *Touch and light*
+- Trackpad mode: drag, tap = left click, hold = right click, knob = scroll
+- Tap = knob click; swipe left/right = change mode; swipe up/down = page / next shortcut
+- LED ring: mode colour, turn needle, mute and macro flashes, pairing breathing
 - Open source, Apache 2.0: github.com/bsommers/input-knob
 
 ---
@@ -189,6 +189,6 @@ There's more hardware waiting to be used. The round screen is also a touch panel
 - The board has no battery; Bluetooth use needs a charger or power bank.
 - Tested on hardware: USB volume/mute/play-pause on macOS; Bluetooth pairing and control with a Mac; upload.sh starting the firmware without a replug.
 - Not yet tested: recovery after Mac sleep/wake, Windows, iOS/Android, the Mac/PC shortcut switch on a PC.
-- Not yet used: touch panel, LED ring.
+- Touch panel: Trackpad mode (drag, tap = left click, hold = right click) and tap/swipe gestures in other modes. LED ring: mode glow, turn needle, action flashes, pairing breathing.
 - Screen images in this notebook are illustrations rendered from the firmware's UI layout, not photographs of the device.
 - Do not state a price, a release date, or performance benchmarks; none are documented.
