@@ -114,6 +114,7 @@ void loop() {
   const ButtonEvent event = buttonPoll();
   if (event != ButtonEvent::None) onButton(event);
 
+  hid::service();
   const bool connected = hid::connected();
   if (connected != wasConnected) {
     wasConnected = connected;

@@ -7,6 +7,7 @@
 #endif
 
 #include <USB.h>
+#include <esp32-hal-tinyusb.h>
 #include <USBHIDConsumerControl.h>
 #include <USBHIDKeyboard.h>
 #include <USBHIDMouse.h>
@@ -32,6 +33,27 @@ void begin() {
 }
 
 bool connected() { return static_cast<bool>(USB); }
+
+// After the host sleeps and wakes, the device can end up unmounted while the
+// host still lists it. Dropping off the bus briefly forces a fresh enumeration.
+void service() {
+  static constexpr uint32_t RECONNECT_AFTER_MS = 3000;
+  static uint32_t lostSinceMs = 0;
+
+  if (connected()) {
+    lostSinceMs = 0;
+    return;
+  }
+  const uint32_t now = millis();
+  if (lostSinceMs == 0) {
+    lostSinceMs = now;
+  } else if (now - lostSinceMs >= RECONNECT_AFTER_MS) {
+    tud_disconnect();
+    delay(200);
+    tud_connect();
+    lostSinceMs = now;
+  }
+}
 
 void volume(int steps) {
   const uint16_t usage =

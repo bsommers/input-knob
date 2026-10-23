@@ -9,6 +9,7 @@
 namespace hid {
 void begin();
 bool connected();
+void service();  // call every loop; recovers a lost host connection
 
 void volume(int steps);  // positive = up
 void mute();
