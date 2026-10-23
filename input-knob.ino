@@ -1,10 +1,12 @@
-// Input Knob: USB volume / scroll / macro controller for the Elecrow
-// CrowPanel 1.28" ESP32-S3 Rotary Display.
+// Input Knob: USB / Bluetooth volume, scroll and macro controller for the
+// Elecrow CrowPanel 1.28" ESP32-S3 Rotary Display.
 //
 //   Turn          volume, scroll wheel, or pick a macro (depends on mode)
 //   Click         mute / middle click / run selected macro
-//   Double click  play-pause / toggle horizontal scroll
+//   Double click  play-pause / toggle horizontal scroll / Mac <-> PC shortcuts
 //   Long press    next mode
+
+#include <Preferences.h>
 
 #include "config.h"
 #include "display.h"
@@ -18,7 +20,13 @@ enum class Mode : uint8_t { Volume, Scroll, Macro, Count };
 static Mode mode = Mode::Volume;
 static bool horizontalScroll = false;
 static int selectedMacro = 0;
-static bool wasConnected = false;
+static bool macShortcuts = true;
+static hid::Link shownLink = hid::Link::None;
+static Preferences settings;
+
+static const Macro &currentMacro() {
+  return macShortcuts ? MAC_MACROS[selectedMacro] : PC_MACROS[selectedMacro];
+}
 
 static void showMode() {
   switch (mode) {
@@ -31,13 +39,12 @@ static void showMode() {
       uiSetValue(horizontalScroll ? "Horizontal" : "Vertical");
       break;
     case Mode::Macro:
-      uiSetMode("Macro", "click to run", 0xF39C12);
-      uiSetValue(MACROS[selectedMacro].name);
+      uiSetMode(macShortcuts ? "Macro (Mac)" : "Macro (PC)", "click run | 2x Mac/PC", 0xF39C12);
+      uiSetValue(currentMacro().name);
       break;
     default:
       break;
   }
-  uiSetConnected(hid::connected());
 }
 
 static void onTurn(int detents) {
@@ -58,7 +65,7 @@ static void onTurn(int detents) {
     }
     case Mode::Macro:
       selectedMacro = ((selectedMacro + detents) % MACRO_COUNT + MACRO_COUNT) % MACRO_COUNT;
-      uiSetValue(MACROS[selectedMacro].name);
+      uiSetValue(currentMacro().name);
       break;
     default:
       break;
@@ -91,7 +98,13 @@ static void onButton(ButtonEvent event) {
       }
       break;
     case Mode::Macro:
-      if (event == ButtonEvent::Click) hid::runMacro(MACROS[selectedMacro]);
+      if (event == ButtonEvent::Click) {
+        hid::runMacro(currentMacro());
+      } else {
+        macShortcuts = !macShortcuts;
+        settings.putBool("mac", macShortcuts);
+        showMode();
+      }
       break;
     default:
       break;
@@ -100,11 +113,15 @@ static void onButton(ButtonEvent event) {
 
 void setup() {
   Serial.begin(115200);
+  settings.begin("input-knob");
+  macShortcuts = settings.getBool("mac", true);
+
   displayBegin();
   uiBegin();
   knobBegin();
   hid::begin();
   showMode();
+  uiSetLink(shownLink);
 }
 
 void loop() {
@@ -115,10 +132,10 @@ void loop() {
   if (event != ButtonEvent::None) onButton(event);
 
   hid::service();
-  const bool connected = hid::connected();
-  if (connected != wasConnected) {
-    wasConnected = connected;
-    uiSetConnected(connected);
+  const hid::Link link = hid::link();
+  if (link != shownLink) {
+    shownLink = link;
+    uiSetLink(link);
   }
 
   displayLoop();

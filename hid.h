@@ -3,13 +3,15 @@
 
 #include "macros.h"
 
-// Host-facing input actions. This is the only module that knows about the
-// transport, so a Bluetooth implementation can replace hid.cpp later.
+// Host-facing input actions, routed to USB when a computer has enumerated the
+// knob over the cable, otherwise to Bluetooth.
 
 namespace hid {
+enum class Link : uint8_t { None, Usb, Bluetooth, Pairing };
+
 void begin();
-bool connected();
-void service();  // call every loop; recovers a lost host connection
+void service();  // call every loop
+Link link();
 
 void volume(int steps);  // positive = up
 void mute();

@@ -1,6 +1,15 @@
 # Input Knob
 
-USB volume / scroll / macro controller for the **Elecrow CrowPanel 1.28" ESP32-S3 Rotary Display** (240x240 round GC9A01, rotary encoder with push button). Shows up on the host as a standard USB keyboard + mouse + media-key device, so no driver is needed. Bluetooth is planned.
+Volume / scroll / macro controller for the **Elecrow CrowPanel 1.28" ESP32-S3 Rotary Display** (240x240 round GC9A01, rotary encoder with push button). Shows up as a standard keyboard + mouse + media-key device over **USB or Bluetooth**, so no driver is needed.
+
+## USB or Bluetooth
+
+The knob picks automatically:
+
+- **Plugged into a computer:** uses USB. Bluetooth stays quiet.
+- **On a charger or power bank:** after 3 s without a USB host it advertises over Bluetooth as **Input Knob**. Pair it from the computer's, phone's or tablet's Bluetooth settings; it reconnects on its own afterwards. To move it to another device, disconnect or forget it on the current one.
+
+The top of the screen shows the link: **USB**, **Bluetooth**, **Bluetooth pairing...** or **No connection**.
 
 ## Controls
 
@@ -8,9 +17,9 @@ USB volume / scroll / macro controller for the **Elecrow CrowPanel 1.28" ESP32-S
 |---|---|---|---|
 | **Volume** (blue) | volume up / down | mute | play / pause |
 | **Scroll** (green) | scroll wheel | middle click | toggle vertical / horizontal |
-| **Macro** (orange) | choose a shortcut | run it | – |
+| **Macro** (orange) | choose a shortcut | run it | switch Mac / PC shortcuts (remembered) |
 
-Default macros: Copy, Paste, Undo, Redo, Screenshot, Mission Control / Task View, Lock. Edit them in `macros.h`.
+Default macros: Copy, Paste, Undo, Redo, Screenshot, Mission Control / Task View, Lock, in Mac (Cmd) and PC (Ctrl / Win) versions. Edit them in `macros.h` using the key codes in `keys.h`.
 
 ## Setup (Arduino IDE)
 
@@ -28,7 +37,7 @@ Default macros: Copy, Paste, Undo, Redo, Screenshot, Mission Control / Task View
    | Flash Size | 16MB (128Mb) |
    | Partition Scheme | Huge APP (3MB No OTA/1MB SPIFFS) |
    | Upload Mode | USB-OTG CDC (TinyUSB) |
-4. Open `input-knob.ino` and upload. If the upload can't connect, hold **BOOT** while plugging in USB, upload, then unplug and replug (the board stays in download mode until power-cycled).
+4. Open `input-knob.ino` and upload. If the upload can't connect, hold **BOOT** while plugging in USB, upload, then unplug and replug. The board can also stay in download mode (dark screen) after a normal upload; unplug and replug to start it.
 
 Command line equivalent:
 
@@ -39,7 +48,7 @@ arduino-cli compile --upload -p <port> \
 
 ## Configuration
 
-`config.h`: `HOST_IS_MAC` (Cmd vs Ctrl shortcuts), `ENCODER_REVERSED`, button timings, scroll speed and backlight brightness.
+`config.h`: `ENCODER_REVERSED`, button timings, scroll speed and backlight brightness.
 
 ## Code layout
 
@@ -48,7 +57,10 @@ arduino-cli compile --upload -p <port> \
 | `input-knob.ino` | modes and what each input does |
 | `board.h` | GPIO map (from Elecrow's examples and schematic) |
 | `knob.*` | encoder (interrupt driven) and button click / double / long press |
-| `hid.*` | USB HID output; the only transport-specific module, so BLE can replace it |
+| `hid.*` | input actions, routed to USB or Bluetooth |
+| `usb_hid.*` | USB HID (TinyUSB) and the reconnect-after-host-sleep watchdog |
+| `ble_hid.*` | Bluetooth LE HID (HID over GATT) |
+| `keys.h` | raw HID key, modifier and media codes shared by both transports |
 | `display.*` | LovyanGFX panel + LVGL display setup |
 | `ui.*` | the round LVGL screen |
 | `macros.h` | shortcut table |

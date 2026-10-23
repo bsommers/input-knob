@@ -1,42 +1,38 @@
 #pragma once
 #include <stdint.h>
 
-#include "config.h"
+#include "keys.h"
 
-// Keyboard shortcuts offered in Macro mode. Keys are pressed in order and then
-// released together. Use KEY_* codes (USBHIDKeyboard.h) or plain characters.
-
-#define KEY_CODE_LEFT_CTRL 0x80
-#define KEY_CODE_LEFT_SHIFT 0x81
-#define KEY_CODE_LEFT_ALT 0x82
-#define KEY_CODE_LEFT_GUI 0x83
-#define KEY_CODE_UP_ARROW 0xDA
-
-#if HOST_IS_MAC
-#define CMD KEY_CODE_LEFT_GUI
-#else
-#define CMD KEY_CODE_LEFT_CTRL
-#endif
+// Keyboard shortcuts offered in Macro mode: one modifier set plus one key.
+// Double-click in Macro mode switches between the Mac and PC tables; keep
+// them the same length so the selection carries over.
 
 struct Macro {
   const char *name;
-  uint8_t keys[4];
+  uint8_t modifiers;
+  uint8_t key;
 };
 
-static const Macro MACROS[] = {
-    {"Copy", {CMD, 'c'}},
-    {"Paste", {CMD, 'v'}},
-    {"Undo", {CMD, 'z'}},
-    {"Redo", {CMD, KEY_CODE_LEFT_SHIFT, 'z'}},
-#if HOST_IS_MAC
-    {"Screenshot", {CMD, KEY_CODE_LEFT_SHIFT, '4'}},
-    {"Mission Ctl", {KEY_CODE_LEFT_CTRL, KEY_CODE_UP_ARROW}},
-    {"Lock", {KEY_CODE_LEFT_CTRL, CMD, 'q'}},
-#else
-    {"Screenshot", {KEY_CODE_LEFT_GUI, KEY_CODE_LEFT_SHIFT, 's'}},
-    {"Task View", {KEY_CODE_LEFT_GUI, '\t'}},
-    {"Lock", {KEY_CODE_LEFT_GUI, 'l'}},
-#endif
+static const Macro MAC_MACROS[] = {
+    {"Copy", mod::GUI, key::C},
+    {"Paste", mod::GUI, key::V},
+    {"Undo", mod::GUI, key::Z},
+    {"Redo", mod::GUI | mod::SHIFT, key::Z},
+    {"Screenshot", mod::GUI | mod::SHIFT, key::DIGIT_4},
+    {"Mission Ctl", mod::CTRL, key::UP_ARROW},
+    {"Lock", mod::CTRL | mod::GUI, key::Q},
 };
 
-constexpr int MACRO_COUNT = sizeof(MACROS) / sizeof(MACROS[0]);
+static const Macro PC_MACROS[] = {
+    {"Copy", mod::CTRL, key::C},
+    {"Paste", mod::CTRL, key::V},
+    {"Undo", mod::CTRL, key::Z},
+    {"Redo", mod::CTRL, key::Y},
+    {"Screenshot", mod::GUI | mod::SHIFT, key::S},
+    {"Task View", mod::GUI, key::TAB},
+    {"Lock", mod::GUI, key::L},
+};
+
+constexpr int MACRO_COUNT = sizeof(MAC_MACROS) / sizeof(MAC_MACROS[0]);
+static_assert(MACRO_COUNT == sizeof(PC_MACROS) / sizeof(PC_MACROS[0]),
+              "MAC_MACROS and PC_MACROS must have the same length");

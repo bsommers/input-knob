@@ -2,80 +2,84 @@
 
 #include <Arduino.h>
 
-#if !defined(ARDUINO_USB_MODE) || ARDUINO_USB_MODE != 0
-#error "Select Tools > USB Mode > USB-OTG (TinyUSB). Hardware CDC mode cannot expose HID."
-#endif
+#include "ble_hid.h"
+#include "keys.h"
+#include "usb_hid.h"
 
-#include <USB.h>
-#include <esp32-hal-tinyusb.h>
-#include <USBHIDConsumerControl.h>
-#include <USBHIDKeyboard.h>
-#include <USBHIDMouse.h>
+// How long USB must be unmounted before Bluetooth starts advertising. Covers
+// boot-time enumeration and the USB watchdog's reconnect.
+static constexpr uint32_t BLUETOOTH_AFTER_USB_LOST_MS = 3000;
 
-static USBHIDConsumerControl consumer;
-static USBHIDKeyboard keyboard;
-static USBHIDMouse mouse;
+static bool useUsb() { return usbhid::mounted(); }
+static bool useBluetooth() { return !useUsb() && blehid::connected(); }
 
-static void tapConsumer(uint16_t usage) {
-  if (!consumer.press(usage)) Serial.printf("[hid] consumer 0x%03X press failed\n", usage);
-  if (!consumer.release()) Serial.println("[hid] consumer release failed");
+static void consumer(uint16_t usage) {
+  if (useUsb()) {
+    usbhid::consumer(usage);
+  } else if (useBluetooth()) {
+    blehid::consumer(usage);
+  }
 }
 
 namespace hid {
 
-// With "USB CDC On Boot" enabled the core has already called USB.begin()
-// before setup(), so this only prepares the HID report queues.
 void begin() {
-  consumer.begin();
-  keyboard.begin();
-  mouse.begin();
-  USB.begin();
+  usbhid::begin();
+  blehid::begin();
 }
 
-bool connected() { return static_cast<bool>(USB); }
-
-// After the host sleeps and wakes, the device can end up unmounted while the
-// host still lists it. Dropping off the bus briefly forces a fresh enumeration.
 void service() {
-  static constexpr uint32_t RECONNECT_AFTER_MS = 3000;
-  static uint32_t lostSinceMs = 0;
+  static uint32_t usbLostSinceMs = 0;
 
-  if (connected()) {
-    lostSinceMs = 0;
+  usbhid::service();
+  if (usbhid::mounted()) {
+    usbLostSinceMs = 0;
+    blehid::setAdvertising(false);
     return;
   }
   const uint32_t now = millis();
-  if (lostSinceMs == 0) {
-    lostSinceMs = now;
-  } else if (now - lostSinceMs >= RECONNECT_AFTER_MS) {
-    tud_disconnect();
-    delay(200);
-    tud_connect();
-    lostSinceMs = now;
-  }
+  if (usbLostSinceMs == 0) usbLostSinceMs = now;
+  blehid::setAdvertising(now - usbLostSinceMs >= BLUETOOTH_AFTER_USB_LOST_MS);
+}
+
+Link link() {
+  if (useUsb()) return Link::Usb;
+  if (blehid::connected()) return Link::Bluetooth;
+  if (blehid::advertising()) return Link::Pairing;
+  return Link::None;
 }
 
 void volume(int steps) {
-  const uint16_t usage =
-      steps > 0 ? CONSUMER_CONTROL_VOLUME_INCREMENT : CONSUMER_CONTROL_VOLUME_DECREMENT;
-  for (int i = abs(steps); i > 0; --i) tapConsumer(usage);
+  const uint16_t usage = steps > 0 ? media::VOLUME_UP : media::VOLUME_DOWN;
+  for (int i = abs(steps); i > 0; --i) consumer(usage);
 }
 
-void mute() { tapConsumer(CONSUMER_CONTROL_MUTE); }
+void mute() { consumer(media::MUTE); }
 
-void playPause() { tapConsumer(CONSUMER_CONTROL_PLAY_PAUSE); }
+void playPause() { consumer(media::PLAY_PAUSE); }
 
-void scroll(int8_t vertical, int8_t horizontal) { mouse.move(0, 0, vertical, horizontal); }
+void scroll(int8_t vertical, int8_t horizontal) {
+  if (useUsb()) {
+    usbhid::scroll(vertical, horizontal);
+  } else if (useBluetooth()) {
+    blehid::scroll(vertical, horizontal);
+  }
+}
 
-void middleClick() { mouse.click(MOUSE_MIDDLE); }
+void middleClick() {
+  if (useUsb()) {
+    usbhid::click(MOUSE_BUTTON_MIDDLE);
+  } else if (useBluetooth()) {
+    blehid::click(MOUSE_BUTTON_MIDDLE);
+  }
+}
 
 void runMacro(const Macro &macro) {
-  for (uint8_t key : macro.keys) {
-    if (key == 0) break;
-    keyboard.press(key);
+  if (useUsb()) {
+    usbhid::keys(macro.modifiers, macro.key);
+  } else if (useBluetooth()) {
+    blehid::keys(macro.modifiers, macro.key);
   }
-  delay(10);
-  keyboard.releaseAll();
 }
 
 }  // namespace hid

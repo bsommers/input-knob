@@ -3,9 +3,6 @@
 
 // User-tunable behaviour. Macros live in macros.h.
 
-// Set to 0 when the host is Windows or Linux: shortcuts then use Ctrl instead of Cmd.
-#define HOST_IS_MAC 1
-
 // Flip if clockwise turns the volume down.
 constexpr bool ENCODER_REVERSED = false;
 

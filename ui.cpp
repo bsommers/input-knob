@@ -6,10 +6,10 @@ static constexpr int DEGREES_PER_DETENT = 15;
 static constexpr int DIAL_SEGMENT_DEGREES = 30;
 
 static lv_obj_t *dial;
+static lv_obj_t *linkLabel;
 static lv_obj_t *modeLabel;
 static lv_obj_t *valueLabel;
 static lv_obj_t *hintLabel;
-static const char *modeHint = "";
 static int dialAngle = 270;  // 12 o'clock in LVGL's arc coordinates
 
 static void drawDial() {
@@ -31,6 +31,10 @@ void uiBegin() {
   lv_obj_set_style_arc_color(dial, lv_color_hex(0x202020), LV_PART_MAIN);
   drawDial();
 
+  linkLabel = lv_label_create(screen);
+  lv_obj_set_style_text_font(linkLabel, &lv_font_montserrat_12, 0);
+  lv_obj_align(linkLabel, LV_ALIGN_TOP_MID, 0, 28);
+
   modeLabel = lv_label_create(screen);
   lv_obj_set_style_text_font(modeLabel, &lv_font_montserrat_20, 0);
   lv_obj_align(modeLabel, LV_ALIGN_TOP_MID, 0, 50);
@@ -50,7 +54,6 @@ void uiSetMode(const char *name, const char *hint, uint32_t color) {
   lv_label_set_text(modeLabel, name);
   lv_obj_set_style_text_color(modeLabel, lv_color_hex(color), 0);
   lv_obj_set_style_arc_color(dial, lv_color_hex(color), LV_PART_INDICATOR);
-  modeHint = hint;
   lv_label_set_text(hintLabel, hint);
   lv_obj_set_style_text_color(hintLabel, lv_color_hex(0x909090), 0);
 }
@@ -62,7 +65,25 @@ void uiTurn(int detents) {
   drawDial();
 }
 
-void uiSetConnected(bool connected) {
-  lv_label_set_text(hintLabel, connected ? modeHint : "USB not connected");
-  lv_obj_set_style_text_color(hintLabel, lv_color_hex(connected ? 0x909090 : 0xE74C3C), 0);
+void uiSetLink(hid::Link link) {
+  const char *text = "No connection";
+  uint32_t color = 0xE74C3C;
+  switch (link) {
+    case hid::Link::Usb:
+      text = "USB";
+      color = 0x20C878;
+      break;
+    case hid::Link::Bluetooth:
+      text = "Bluetooth";
+      color = 0x3498DB;
+      break;
+    case hid::Link::Pairing:
+      text = "Bluetooth pairing...";
+      color = 0xF39C12;
+      break;
+    case hid::Link::None:
+      break;
+  }
+  lv_label_set_text(linkLabel, text);
+  lv_obj_set_style_text_color(linkLabel, lv_color_hex(color), 0);
 }
