@@ -8,7 +8,9 @@ Arduino + LVGL firmware for the **Elecrow CrowPanel 1.28" HMI ESP32 Rotary Displ
 
 ## Quick Start
 
-You need the knob, a USB-C data cable, a Mac (Windows/Linux work too; see [HOWTO](docs/HOWTO.md)) and the [Arduino IDE 2](https://www.arduino.cc/en/software) with the **esp32 by Espressif** 3.x board package.
+**Just want to use it?** Download the prebuilt firmware from the [latest release](https://github.com/bsommers/input-knob/releases/latest) and flash it from your browser; the release notes have the steps. No Arduino setup needed.
+
+**Building from source:** you need the knob, a USB-C data cable, a Mac (Windows/Linux work too; see [HOWTO](docs/HOWTO.md)) and the [Arduino IDE 2](https://www.arduino.cc/en/software) with the **esp32 by Espressif** 3.x board package.
 
 ```bash
 # 1. Get the code
