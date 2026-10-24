@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/banner.png" alt="Input Knob: volume, scroll, shortcuts and a trackpad on one round ESP32-S3 dial" width="100%"></p>
+
 # Input Knob
 
 > Turn an Elecrow CrowPanel 1.28" ESP32-S3 rotary display into a volume, scroll, shortcut and mini-trackpad knob for your computer, phone or tablet, over USB or Bluetooth.
