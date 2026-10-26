@@ -58,12 +58,12 @@ jobs:
 
       - name: Package flashable image
         run: |
+          pip install --quiet "esptool==4.6.*"  # same release the ESP32 core bundles
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then version="$GITHUB_REF_NAME"; else version="${GITHUB_SHA::7}"; fi
           image="input-knob-$version-esp32s3.bin"
-          esptool=$(ls -d ~/.arduino15/packages/esp32/tools/esptool_py/*/esptool | sort -V | tail -1)
           boot_app0=~/.arduino15/packages/esp32/hardware/esp32/$ESP32_CORE/tools/partitions/boot_app0.bin
           mkdir dist
-          "$esptool" --chip esp32s3 merge_bin -o "dist/$image" \
+          esptool.py --chip esp32s3 merge_bin -o "dist/$image" \
             --flash_mode keep --flash_freq keep --flash_size keep \
             0x0 build/input-knob.ino.bootloader.bin \
             0x8000 build/input-knob.ino.partitions.bin \
