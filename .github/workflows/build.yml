@@ -1,0 +1,89 @@
+name: Build
+
+# Compiles the firmware on every push and pull request. On a v* tag it also
+# packages a flashable image and attaches it to the GitHub release.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  ARDUINO_CLI_VERSION: "1.5.1"
+  ESP32_CORE: "3.0.7"
+  BOARD_INDEX: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+  # Elecrow's bundled lvgl 9.1.0, LovyanGFX 1.2.26, Adafruit_NeoPixel 1.15.1 and lv_conf.h
+  ELECROW_REPO: https://github.com/Elecrow-RD/CrowPanel-1.28inch-HMI-ESP32-Rotary-Display-240-240-IPS-Round-Touch-Knob-Screen.git
+  ELECROW_SHA: d7a766ca14780ee2e4865d3a865483234e4aeea9
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # The sketch folder must be named after input-knob.ino.
+      - uses: actions/checkout@v4
+        with:
+          path: input-knob
+
+      - uses: arduino/setup-arduino-cli@v2
+        with:
+          version: ${{ env.ARDUINO_CLI_VERSION }}
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.arduino15
+          key: arduino15-esp32-${{ env.ESP32_CORE }}
+
+      - name: Install ESP32 core
+        run: |
+          arduino-cli core update-index --additional-urls "$BOARD_INDEX"
+          arduino-cli core install "esp32:esp32@$ESP32_CORE" --additional-urls "$BOARD_INDEX"
+
+      - name: Fetch Elecrow's pinned libraries
+        run: |
+          git clone --quiet --filter=blob:none --no-checkout "$ELECROW_REPO" elecrow
+          git -C elecrow sparse-checkout set example/Arduino/libraries
+          git -C elecrow checkout --quiet "$ELECROW_SHA"
+          mkdir libraries
+          cp -R elecrow/example/Arduino/libraries/{lvgl,LovyanGFX,Adafruit_NeoPixel,lv_conf.h} libraries/
+
+      - name: Compile
+        working-directory: input-knob
+        run: arduino-cli compile --libraries ../libraries --build-path ../build --warnings default .
+
+      - name: Package flashable image
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then version="$GITHUB_REF_NAME"; else version="${GITHUB_SHA::7}"; fi
+          image="input-knob-$version-esp32s3.bin"
+          esptool=$(ls -d ~/.arduino15/packages/esp32/tools/esptool_py/*/esptool | sort -V | tail -1)
+          boot_app0=~/.arduino15/packages/esp32/hardware/esp32/$ESP32_CORE/tools/partitions/boot_app0.bin
+          mkdir dist
+          "$esptool" --chip esp32s3 merge_bin -o "dist/$image" \
+            --flash_mode keep --flash_freq keep --flash_size keep \
+            0x0 build/input-knob.ino.bootloader.bin \
+            0x8000 build/input-knob.ino.partitions.bin \
+            0xe000 "$boot_app0" \
+            0x10000 build/input-knob.ino.bin
+          (cd dist && sha256sum "$image" > "$image.sha256" && cat "$image.sha256")
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: dist/
+
+      - name: Attach to GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            awk -v tag="$GITHUB_REF_NAME" '$0 ~ "^## \\[" tag "\\]" {f=1; next} /^## \[/ {f=0} /^\[v/ {f=0} f' \
+              input-knob/CHANGELOG.md > notes.md
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+          fi
+          gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --clobber dist/*

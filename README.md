@@ -2,6 +2,8 @@
 
 # Input Knob
 
+[![Build](https://github.com/bsommers/input-knob/actions/workflows/build.yml/badge.svg)](https://github.com/bsommers/input-knob/actions/workflows/build.yml) [![Release](https://img.shields.io/github/v/release/bsommers/input-knob)](https://github.com/bsommers/input-knob/releases/latest) [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
+
 > Turn an Elecrow CrowPanel 1.28" ESP32-S3 rotary display into a volume, scroll, shortcut and mini-trackpad knob for your computer, phone or tablet, over USB or Bluetooth.
 
 Arduino + LVGL firmware for the **Elecrow CrowPanel 1.28" HMI ESP32 Rotary Display** (240x240 round GC9A01 touch screen, rotary encoder with push button, 5-LED ring). The knob shows up as an ordinary keyboard + mouse + media-key device, so the host needs no driver or companion app. It is not a general macro-pad framework: there are four fixed modes, and shortcuts are edited in code.
