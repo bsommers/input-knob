@@ -4,9 +4,9 @@
 
 [![Build](https://github.com/bsommers/input-knob/actions/workflows/build.yml/badge.svg)](https://github.com/bsommers/input-knob/actions/workflows/build.yml) [![Release](https://img.shields.io/github/v/release/bsommers/input-knob)](https://github.com/bsommers/input-knob/releases/latest) [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
-> Turn an Elecrow CrowPanel 1.28" ESP32-S3 rotary display into a volume, scroll, shortcut and mini-trackpad knob for your computer, phone or tablet, over USB or Bluetooth.
+> Turn an Elecrow CrowPanel 1.28" or 1.46" ESP32-S3 rotary display into a volume, scroll, shortcut and mini-trackpad knob for your computer, phone or tablet, over USB or Bluetooth.
 
-Arduino + LVGL firmware for the **Elecrow CrowPanel 1.28" HMI ESP32 Rotary Display** (240x240 round GC9A01 touch screen, rotary encoder with push button, 5-LED ring). The knob shows up as an ordinary keyboard + mouse + media-key device, so the host needs no driver or companion app. It is not a general macro-pad framework: there are four fixed modes, and shortcuts are edited in code.
+Arduino + LVGL firmware for the **Elecrow CrowPanel 1.28" (240x240 GC9A01, 5-LED ring)** and **1.46" (360x360 JD9855, 8-LED ring) HMI ESP32 Rotary Displays** (round IPS capacitive touch screen, rotary encoder with push button, RGB LED ring). The firmware auto-detects the connected board size at boot (or can be pinned via `CROWPANEL_SIZE` in `config.h`). The knob shows up as an ordinary keyboard + mouse + media-key device, so the host needs no driver or companion app. It is not a general macro-pad framework: there are four fixed modes, and shortcuts are edited in code.
 
 ---
 
@@ -84,8 +84,8 @@ Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 ```
 input-knob/
 ├── input-knob.ino   — modes and what each turn / click does
-├── board.h          — GPIO map for the CrowPanel 1.28"
-├── config.h         — tunables: encoder direction, button timing, scroll speed, brightness
+├── board.h          — GPIO map and board model helpers (1.28" and 1.46")
+├── config.h         — tunables: board size override, encoder direction, button timing, scroll speed, brightness
 ├── knob.h/.cpp      — interrupt-driven encoder; click / double-click / long-press detection
 ├── touch.h/.cpp     — CST816D touch panel: taps, long press, swipes, drag deltas
 ├── leds.h/.cpp      — WS2812 LED ring: mode glow, turn needle, flashes, pairing breathing
@@ -109,6 +109,7 @@ Compile-time settings in `config.h`:
 
 | Setting | Default | Description |
 |---|---|---|
+| `CROWPANEL_SIZE` | `0` | `0` auto-detects 1.28" vs 1.46" at boot; set `128` or `146` to force |
 | `ENCODER_REVERSED` | `false` | Flip if clockwise turns the volume down |
 | `BUTTON_DEBOUNCE_MS` | `25` | Button debounce time |
 | `BUTTON_DOUBLE_CLICK_MS` | `300` | Max gap between clicks of a double-click |
@@ -166,7 +167,7 @@ No `arduino-cli` on your PATH? The Arduino IDE bundles one at `/Applications/Ard
 | [How-To Guide](docs/HOWTO.md) | Install, pair, add a shortcut, add a mode, fix common problems |
 | [Brochure](docs/brochure.md) | One-page overview for sharing |
 
-Hardware reference: Elecrow's [wiki](https://elecrow.com/wiki/CrowPanel_1.28inch-HMI_ESP32_Rotary_Display.html) and [example repo](https://github.com/Elecrow-RD/CrowPanel-1.28inch-HMI-ESP32-Rotary-Display-240-240-IPS-Round-Touch-Knob-Screen) (pin map, schematic, factory firmware).
+Hardware reference: Elecrow's 1.28" [wiki](https://elecrow.com/wiki/CrowPanel_1.28inch-HMI_ESP32_Rotary_Display.html) / [example repo](https://github.com/Elecrow-RD/CrowPanel-1.28inch-HMI-ESP32-Rotary-Display-240-240-IPS-Round-Touch-Knob-Screen) and 1.46" [example repo](https://github.com/Elecrow-RD/CrowPanel-1.46inch-HMI-ESP32-Rotary-Display) (pin maps, schematics, factory firmware).
 
 ---
 

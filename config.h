@@ -3,6 +3,9 @@
 
 // User-tunable behaviour. Macros live in macros.h.
 
+// CrowPanel rotary display size: 0 = auto-detect (1.28" or 1.46"), 128, or 146.
+constexpr int CROWPANEL_SIZE = 0;
+
 // Flip if clockwise turns the volume down.
 constexpr bool ENCODER_REVERSED = false;
 

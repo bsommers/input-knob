@@ -2,6 +2,8 @@
 
 #include <lvgl.h>
 
+#include "board.h"
+
 static constexpr int DEGREES_PER_DETENT = 15;
 static constexpr int DIAL_SEGMENT_DEGREES = 30;
 
@@ -17,37 +19,42 @@ static void drawDial() {
 }
 
 void uiBegin() {
+  const bool large = boardModel() == BoardModel::CrowPanel146;
+  const int screenSize = boardScreenSize();
+  const int dialMargin = large ? 12 : 8;
+  const int arcWidth = large ? 14 : 10;
+
   lv_obj_t *screen = lv_screen_active();
   lv_obj_set_style_bg_color(screen, lv_color_black(), 0);
 
   dial = lv_arc_create(screen);
-  lv_obj_set_size(dial, 232, 232);
+  lv_obj_set_size(dial, screenSize - dialMargin, screenSize - dialMargin);
   lv_obj_center(dial);
   lv_obj_remove_style(dial, nullptr, LV_PART_KNOB);
   lv_obj_remove_flag(dial, LV_OBJ_FLAG_CLICKABLE);
   lv_arc_set_bg_angles(dial, 0, 360);
-  lv_obj_set_style_arc_width(dial, 10, LV_PART_MAIN);
-  lv_obj_set_style_arc_width(dial, 10, LV_PART_INDICATOR);
+  lv_obj_set_style_arc_width(dial, arcWidth, LV_PART_MAIN);
+  lv_obj_set_style_arc_width(dial, arcWidth, LV_PART_INDICATOR);
   lv_obj_set_style_arc_color(dial, lv_color_hex(0x202020), LV_PART_MAIN);
   drawDial();
 
   linkLabel = lv_label_create(screen);
-  lv_obj_set_style_text_font(linkLabel, &lv_font_montserrat_12, 0);
-  lv_obj_align(linkLabel, LV_ALIGN_TOP_MID, 0, 28);
+  lv_obj_set_style_text_font(linkLabel, large ? &lv_font_montserrat_18 : &lv_font_montserrat_12, 0);
+  lv_obj_align(linkLabel, LV_ALIGN_TOP_MID, 0, large ? 42 : 28);
 
   modeLabel = lv_label_create(screen);
-  lv_obj_set_style_text_font(modeLabel, &lv_font_montserrat_20, 0);
-  lv_obj_align(modeLabel, LV_ALIGN_TOP_MID, 0, 50);
+  lv_obj_set_style_text_font(modeLabel, large ? &lv_font_montserrat_28 : &lv_font_montserrat_20, 0);
+  lv_obj_align(modeLabel, LV_ALIGN_TOP_MID, 0, large ? 75 : 50);
 
   valueLabel = lv_label_create(screen);
-  lv_obj_set_style_text_font(valueLabel, &lv_font_montserrat_28, 0);
+  lv_obj_set_style_text_font(valueLabel, large ? &lv_font_montserrat_40 : &lv_font_montserrat_28, 0);
   lv_obj_set_style_text_color(valueLabel, lv_color_white(), 0);
   lv_obj_align(valueLabel, LV_ALIGN_CENTER, 0, 0);
 
   hintLabel = lv_label_create(screen);
-  lv_obj_set_style_text_font(hintLabel, &lv_font_montserrat_14, 0);
+  lv_obj_set_style_text_font(hintLabel, large ? &lv_font_montserrat_20 : &lv_font_montserrat_14, 0);
   lv_obj_set_style_text_align(hintLabel, LV_TEXT_ALIGN_CENTER, 0);
-  lv_obj_align(hintLabel, LV_ALIGN_BOTTOM_MID, 0, -45);
+  lv_obj_align(hintLabel, LV_ALIGN_BOTTOM_MID, 0, large ? -68 : -45);
 }
 
 void uiSetMode(const char *name, const char *hint, uint32_t color) {

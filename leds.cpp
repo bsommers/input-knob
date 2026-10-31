@@ -6,7 +6,7 @@
 #include "board.h"
 #include "config.h"
 
-static constexpr int LED_COUNT = 5;
+static constexpr int MAX_LED_COUNT = 8;
 static constexpr uint32_t FRAME_MS = 20;
 static constexpr uint32_t NEEDLE_FADE_MS = 1500;
 static constexpr uint32_t FLASH_MS = 300;
@@ -15,7 +15,8 @@ static constexpr float GLOW_LEVEL = 0.15f;
 static constexpr uint32_t PAIRING_COLOR = 0xF39C12;
 static constexpr uint32_t LINK_LOST_COLOR = 0xE74C3C;
 
-static Adafruit_NeoPixel ring(LED_COUNT, pins::RGB_LEDS, NEO_GRB + NEO_KHZ800);
+static Adafruit_NeoPixel ring(MAX_LED_COUNT, pins::RGB_LEDS, NEO_GRB + NEO_KHZ800);
+static int ledCount = 5;
 static uint32_t modeColor = 0;
 static hid::Link currentLink = hid::Link::None;
 static int needle = 0;
@@ -35,6 +36,8 @@ static bool isConnected(hid::Link state) {
 }
 
 void ledsBegin() {
+  ledCount = boardLedCount();
+  ring.updateLength(ledCount);
   ring.begin();
   ring.clear();
   ring.show();
@@ -49,7 +52,7 @@ void ledsSetLink(hid::Link next) {
 
 void ledsTurn(int detents) {
   const int step = LED_RING_REVERSED ? -detents : detents;
-  needle = ((needle + step) % LED_COUNT + LED_COUNT) % LED_COUNT;
+  needle = ((needle + step) % ledCount + ledCount) % ledCount;
   needleAtMs = millis();
 }
 

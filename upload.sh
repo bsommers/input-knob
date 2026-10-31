@@ -15,12 +15,31 @@ IDE_CLI="/Applications/Arduino IDE.app/Contents/Resources/app/lib/backend/resour
 IDE_CONFIG="$HOME/.arduinoIDE/arduino-cli.yaml"
 if command -v arduino-cli >/dev/null; then
   CLI=(arduino-cli)
+elif [ -x "$HOME/.local/bin/arduino-cli" ]; then
+  CLI=("$HOME/.local/bin/arduino-cli")
 else
   CLI=("$IDE_CLI")
 fi
 [ -f "$IDE_CONFIG" ] && CLI+=(--config-file "$IDE_CONFIG")
 
-ESPTOOL=$(ls -d "$HOME"/Library/Arduino15/packages/esp32/tools/esptool_py/*/esptool | sort -V | tail -1)
+find_esptool() {
+  for dir in "$HOME/Library/Arduino15" "$HOME/.arduino15"; do
+    local bin py
+    bin=$(ls -d "$dir"/packages/esp32/tools/esptool_py/*/esptool 2>/dev/null | sort -V | tail -1 || true)
+    if [ -n "$bin" ] && [ -f "$bin" ] && [ -x "$bin" ]; then
+      echo "$bin"; return 0
+    fi
+    py=$(ls -d "$dir"/packages/esp32/tools/esptool_py/*/esptool.py 2>/dev/null | sort -V | tail -1 || true)
+    if [ -n "$py" ] && [ -f "$py" ]; then
+      echo "python3 $py"; return 0
+    fi
+  done
+  if command -v esptool.py >/dev/null; then echo "esptool.py"; return 0; fi
+  if command -v esptool >/dev/null; then echo "esptool"; return 0; fi
+  return 1
+}
+
+read -r -a ESPTOOL <<< "$(find_esptool)"
 RTC_CNTL_OPTION1_REG=0x6000812C
 FORCE_DOWNLOAD_BOOT=0x1
 
@@ -45,5 +64,5 @@ port=$(espressif_port)
 [ -n "$port" ] || { echo "Knob not found after upload; unplug and replug it." >&2; exit 1; }
 
 echo "Clearing force-download flag and starting firmware via $port"
-"$ESPTOOL" --chip esp32s3 --port "$port" --after hard_reset \
-  write_mem "$RTC_CNTL_OPTION1_REG" 0 "$FORCE_DOWNLOAD_BOOT"
+"${ESPTOOL[@]}" --chip esp32s3 --port "$port" --before no_reset --after hard_reset \
+  write_mem "$RTC_CNTL_OPTION1_REG" 0 "$FORCE_DOWNLOAD_BOOT" 2>/dev/null || true

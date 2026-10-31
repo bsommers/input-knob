@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [v0.2.0] - 2026-10-31
+
+Adds support for the **Elecrow CrowPanel 1.46" HMI ESP32 Rotary Display** (360x360 IPS screen, 8-LED ring) alongside the 1.28" model in a single auto-detecting firmware image, plus Linux tooling and CI release packaging.
+
+### Added
+- **CrowPanel 1.46" (360x360) support**: `Panel_JD9855` display driver (`P146B001-IPS-CTP-V2`), `GPIO17` 5V RGB LED rail enable, 8-LED NeoPixel ring sizing, and scaled 360x360 LVGL dial/typography in `ui.cpp`.
+- **Automatic board detection**: detects 1.28" (240x240, 5 LEDs) vs 1.46" (360x360, 8 LEDs) at boot via `GPIO17` pull-down sensing, with compile-time override via `CROWPANEL_SIZE` (`0`, `128`, or `146`) in `config.h`.
+- **Serial boot diagnostic**: logs detected board model, resolution, LED count, and CST816 touch status when serial connects.
+- **Linux support in `upload.sh`**: locates `~/.local/bin/arduino-cli`, `~/.arduino15`, and `esptool.py`, and handles `--before no_reset` when clearing the force-download boot flag.
+- **GitHub Actions CI & release packaging**: builds firmware on push/PR and packages a merged `esp32s3` flash image with SHA-256 checksum on `v*` tags.
+- **Brand assets**: project logo, README banner, and social preview image.
+
 ## [v0.1.0] - 2026-10-23
 
 First release of Input Knob, firmware for the Elecrow CrowPanel 1.28" ESP32-S3 rotary display.
@@ -29,4 +41,5 @@ First release of Input Knob, firmware for the Elecrow CrowPanel 1.28" ESP32-S3 r
 - The USB device name shows as `ESP32S3_DEV`.
 - Uploading from the Arduino IDE's Upload button (rather than `upload.sh`) leaves the screen dark until the knob is replugged.
 
+[v0.2.0]: https://github.com/bsommers/input-knob/compare/v0.1.0...v0.2.0
 [v0.1.0]: https://github.com/bsommers/input-knob/releases/tag/v0.1.0

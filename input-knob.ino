@@ -1,5 +1,5 @@
 // Input Knob: USB / Bluetooth volume, scroll, macro and trackpad controller
-// for the Elecrow CrowPanel 1.28" ESP32-S3 Rotary Display.
+// for the Elecrow CrowPanel 1.28" and 1.46" ESP32-S3 Rotary Displays.
 //
 //   Turn          volume, scroll wheel, pick a macro, or scroll (trackpad)
 //   Click         mute / middle click / run selected macro / left click
@@ -12,6 +12,7 @@
 
 #include <Preferences.h>
 
+#include "board.h"
 #include "config.h"
 #include "display.h"
 #include "hid.h"
@@ -33,6 +34,8 @@ static bool horizontalScroll = false;
 static int selectedMacro = 0;
 static bool macShortcuts = true;
 static hid::Link shownLink = hid::Link::None;
+static bool touchOk = false;
+static bool bannerPrinted = false;
 static Preferences settings;
 
 static uint32_t modeColor() { return MODE_COLORS[static_cast<uint8_t>(mode)]; }
@@ -210,13 +213,21 @@ void setup() {
   uiBegin();
   ledsBegin();
   knobBegin();
-  if (!touchBegin()) Serial.println("[touch] CST816D not responding");
+  touchOk = touchBegin();
+  if (!touchOk) Serial.println("[touch] CST816 not responding");
   hid::begin();
   showMode();
   uiSetLink(shownLink);
 }
 
 void loop() {
+  if (!bannerPrinted && Serial) {
+    bannerPrinted = true;
+    Serial.printf("[board] CrowPanel %s (%dx%d, %d LEDs, touch=%s)\n",
+                  boardModel() == BoardModel::CrowPanel146 ? "1.46\"" : "1.28\"",
+                  boardScreenSize(), boardScreenSize(), boardLedCount(),
+                  touchOk ? "ok" : "none");
+  }
   const int detents = knobTakeDetents();
   if (detents != 0) onTurn(detents);
 
