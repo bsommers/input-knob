@@ -12,6 +12,13 @@
 #include <USBHIDMouse.h>
 #include <esp32-hal-tinyusb.h>
 
+#if !ARDUINO_USB_CDC_ON_BOOT
+// With "USB CDC On Boot" disabled the sketch owns the USB serial port, so the
+// device name can be set before USB starts. It still honours the 1200-baud
+// reboot-to-bootloader request that uploads rely on.
+USBCDC USBSerial(0);
+#endif
+
 static USBHIDConsumerControl consumerDevice;
 static USBHIDKeyboard keyboardDevice;
 static USBHIDMouse mouseDevice;
@@ -22,9 +29,14 @@ static bool reached(uint32_t now, uint32_t deadline) {
 
 namespace usbhid {
 
-// With "USB CDC On Boot" enabled the core has already called USB.begin()
-// before setup(), so this only prepares the HID report queues.
+// With "USB CDC On Boot" enabled the core has already started USB before
+// setup(), so the name below can't be applied and the host sees ESP32S3_DEV.
 void begin() {
+#if !ARDUINO_USB_CDC_ON_BOOT
+  USB.productName("Input Knob");
+  USB.manufacturerName("maker-iot");
+  USBSerial.begin();
+#endif
   consumerDevice.begin();
   keyboardDevice.begin();
   mouseDevice.begin();
@@ -65,8 +77,8 @@ void service() {
 }
 
 void consumer(uint16_t usage) {
-  if (!consumerDevice.press(usage)) Serial.printf("[usb] consumer 0x%03X press failed\n", usage);
-  if (!consumerDevice.release()) Serial.println("[usb] consumer release failed");
+  if (!consumerDevice.press(usage)) USBSerial.printf("[usb] consumer 0x%03X press failed\n", usage);
+  if (!consumerDevice.release()) USBSerial.println("[usb] consumer release failed");
 }
 
 void move(int8_t dx, int8_t dy) { mouseDevice.move(dx, dy); }

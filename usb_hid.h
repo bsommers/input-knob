@@ -1,5 +1,10 @@
 #pragma once
+#include <USBCDC.h>
 #include <stdint.h>
+
+// USB serial port used for logs. The core defines it when "USB CDC On Boot"
+// is enabled; otherwise usb_hid.cpp does.
+extern USBCDC USBSerial;
 
 // USB HID transport (TinyUSB composite: keyboard + mouse + consumer control).
 

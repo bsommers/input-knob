@@ -86,7 +86,7 @@ The host's OS is the only consumer: it maps consumer-control usages to its volum
 
 ## Trade-offs Made
 
-- **Arduino + LVGL over ESP-IDF**: Chose the Arduino core because Elecrow's examples and libraries target it. Cost: less control over USB start-up (the device name stays `ESP32S3_DEV`) and an old bundled esptool that needed `upload.sh`.
+- **Arduino + LVGL over ESP-IDF**: Chose the Arduino core because Elecrow's examples and libraries target it. Cost: USB start-up had to be taken over from the core (CDC On Boot disabled) to name the device, and an old bundled esptool needed `upload.sh`.
 - **Bluedroid BLE (built into the core) over NimBLE**: No extra library to install. Cost: about 0.7 MB more flash; still well under the 3 MB partition.
 - **USB always wins over Bluetooth**: No duplicate pairing when plugged into a computer. Cost: you can't use the knob over Bluetooth while it's on a computer's USB port.
 - **Fixed shortcut tables over runtime configuration**: A small firmware with no host app. Cost: changing shortcuts means a rebuild.

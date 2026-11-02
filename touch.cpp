@@ -11,6 +11,9 @@ static constexpr uint8_t REG_FINGER_COUNT = 0x02;  // followed by X high, X low,
 static constexpr uint8_t REG_DISABLE_AUTO_SLEEP = 0xFE;
 static constexpr uint32_t POLL_EVERY_MS = 10;
 
+static bool cancelled = false;  // current press is ignored until the finger lifts
+static uint32_t suppressUntilMs = 0;
+
 static bool readPoint(bool *touching, int16_t *x, int16_t *y) {
   Wire1.beginTransmission(ADDRESS);
   Wire1.write(REG_FINGER_COUNT);
@@ -56,6 +59,11 @@ bool touchBegin() {
   return Wire1.endTransmission() == 0;
 }
 
+void touchSuppress() {
+  cancelled = true;
+  suppressUntilMs = millis() + TOUCH_IGNORE_AFTER_TURN_MS;
+}
+
 TouchUpdate touchPoll() {
   static uint32_t lastPollMs = 0;
   static bool down = false;
@@ -77,9 +85,13 @@ TouchUpdate touchPoll() {
     down = true;
     moved = false;
     longFired = false;
+    cancelled = static_cast<int32_t>(now - suppressUntilMs) < 0;
     startX = lastX = x;
     startY = lastY = y;
     downAtMs = now;
+  } else if (touching && cancelled) {
+    lastX = x;
+    lastY = y;
   } else if (touching) {
     update.dx = x - lastX;
     update.dy = y - lastY;
@@ -92,7 +104,7 @@ TouchUpdate touchPoll() {
     }
   } else if (down) {
     down = false;
-    if (!longFired) {
+    if (!longFired && !cancelled) {
       update.gesture = moved ? swipe(lastX - startX, lastY - startY) : TouchGesture::Tap;
     }
   }

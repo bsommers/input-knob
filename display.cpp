@@ -140,6 +140,10 @@ class LGFX : public lgfx::LGFX_Device {
 static LGFX gfx;
 static constexpr int DRAW_BUFFER_LINES = 40;
 
+static int detectMillivolts = -1;
+
+int boardDetectMillivolts() { return detectMillivolts; }
+
 BoardModel boardModel() {
   if constexpr (CROWPANEL_SIZE == 146) return BoardModel::CrowPanel146;
   if constexpr (CROWPANEL_SIZE == 128) return BoardModel::CrowPanel128;
@@ -147,13 +151,15 @@ BoardModel boardModel() {
   static bool detected = false;
   static BoardModel model = BoardModel::CrowPanel128;
   if (!detected) {
-    // On the 1.46" board, GPIO17 (POWER_RGB) feeds an NPN transistor base
-    // through a 10K resistor to GND (~1.1V with internal 45K pull-up);
-    // on the 1.28" board GPIO17 is unconnected (~3.3V with pull-up).
+    // With the internal pull-up, GPIO17 (POWER_RGB) reads ~1.1V on the 1.46"
+    // board (NPN transistor base via 10K) and ~1.7V on the 1.28" board
+    // (measured: 1674mV), so the threshold sits between them. Set
+    // CROWPANEL_SIZE in config.h if a board lands on the wrong side.
     pinMode(pins::POWER_RGB, INPUT_PULLUP);
     delay(1);
     const int mv = analogReadMilliVolts(pins::POWER_RGB);
-    model = mv < 2200 ? BoardModel::CrowPanel146 : BoardModel::CrowPanel128;
+    detectMillivolts = mv;
+    model = mv < 1400 ? BoardModel::CrowPanel146 : BoardModel::CrowPanel128;
     detected = true;
   }
   return model;
@@ -186,10 +192,12 @@ void displayBegin() {
   digitalWrite(pins::POWER_LED, LOW);
   pinMode(pins::POWER_LCD, OUTPUT);
   pinMode(pins::POWER_EXT, OUTPUT);
-  pinMode(pins::POWER_RGB, OUTPUT);
   digitalWrite(pins::POWER_LCD, HIGH);
   digitalWrite(pins::POWER_EXT, HIGH);
-  digitalWrite(pins::POWER_RGB, HIGH);
+  if (model == BoardModel::CrowPanel146) {  // GPIO17 is wired to something else on the 1.28"
+    pinMode(pins::POWER_RGB, OUTPUT);
+    digitalWrite(pins::POWER_RGB, HIGH);
+  }
 
   ledcAttach(pins::BACKLIGHT, 5000, 8);
   ledcWrite(pins::BACKLIGHT, BACKLIGHT_PERCENT * 255UL / 100UL);

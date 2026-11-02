@@ -15,3 +15,8 @@ struct TouchUpdate {
 
 bool touchBegin();  // false if the controller doesn't answer
 TouchUpdate touchPoll();
+
+// Drop the current touch and ignore new ones for TOUCH_IGNORE_AFTER_TURN_MS.
+// Called on every knob detent: the panel sits inside the knob, so a finger on
+// the glass while turning shouldn't become a tap or swipe.
+void touchSuppress();

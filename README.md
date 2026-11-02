@@ -118,6 +118,7 @@ Compile-time settings in `config.h`:
 | `BACKLIGHT_PERCENT` | `60` | Screen brightness |
 | `TOUCH_TAP_SLOP_PX` | `12` | Finger movement still counted as a tap or hold |
 | `TOUCH_SWIPE_MIN_PX` | `50` | Distance a swipe must travel |
+| `TOUCH_IGNORE_AFTER_TURN_MS` | `400` | Touches ignored after a knob turn, so a resting finger doesn't tap |
 | `TRACKPAD_GAIN` / `TRACKPAD_ACCELERATION` | `2.0` / `0.15` | Cursor speed and acceleration |
 | `SWIPE_SCROLL_LINES` | `10` | Wheel units per swipe in Scroll mode |
 | `LED_BRIGHTNESS` | `60` | LED ring brightness cap (0–255) |
@@ -131,7 +132,7 @@ Board settings (also in `sketch.yaml`) for the Arduino IDE **Tools** menu:
 |---|---|
 | Board | ESP32S3 Dev Module |
 | USB Mode | **USB-OTG (TinyUSB)** (the build stops with an error otherwise) |
-| USB CDC On Boot | Enabled |
+| USB CDC On Boot | **Disabled** (the firmware starts the USB serial port itself, so it can name the device "Input Knob") |
 | Upload Mode | USB-OTG CDC (TinyUSB) |
 | PSRAM | OPI PSRAM |
 | Flash Size | 16MB (128Mb) |

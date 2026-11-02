@@ -232,6 +232,21 @@ arduino-cli monitor -p /dev/cu.usbmodem<id> -c baudrate=115200
 **Cause**: Touch axes or speed don't suit your setup.
 **Fix**: Adjust `TRACKPAD_GAIN` and `TRACKPAD_ACCELERATION` in `config.h`. For reversed axes, negate `touch.dx` / `touch.dy` in `onTrackpadTouch()` in `input-knob.ino`.
 
+### Turning the knob taps or swipes the screen
+
+**Cause**: A finger resting on the glass while turning.
+**Fix**: Touches are ignored for `TOUCH_IGNORE_AFTER_TURN_MS` (400 ms) after each detent. Raise it in `config.h` if your grip still triggers taps.
+
+### Screen stays dark on a 1.28" board, or looks wrong on a 1.46"
+
+**Cause**: Board auto-detect picked the wrong model. It reads GPIO17 with the internal pull-up: about 1.7 V on the 1.28", about 1.1 V on the 1.46", split at 1400 mV. The serial log prints the reading, e.g. `[board] CrowPanel 1.28" (240x240, 5 LEDs, touch=ok, gpio17=1674mV)`.
+**Fix**: Set `CROWPANEL_SIZE` to `128` or `146` in `config.h`.
+
+### Screen flashes black and the knob keeps dropping off USB
+
+**Cause**: The board is restarting, usually from a loose USB-C plug or cable.
+**Fix**: Reseat the connector before suspecting the firmware.
+
 ### Right click (touch and hold) acts as a drag
 
 **Cause**: The finger moved more than `TOUCH_TAP_SLOP_PX` (12 px) during the hold.
@@ -239,7 +254,7 @@ arduino-cli monitor -p /dev/cu.usbmodem<id> -c baudrate=115200
 
 ### Touch does nothing
 
-**Cause**: The CST816D didn't answer at start-up. The serial log shows `[touch] CST816D not responding`.
+**Cause**: The CST816D didn't answer at start-up. The serial log shows `[touch] CST816 not responding`.
 **Fix**: Power-cycle the knob. If it persists, check that `board.h` still has touch SDA 6, SCL 7, RST 13, INT 5.
 
 ### LED needle walks against the knob

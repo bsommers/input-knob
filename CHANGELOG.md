@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [v0.2.1] - 2026-11-02
+
+### Fixed
+- **Blank screen on the 1.28" board**: auto-detect read 1674 mV on GPIO17 (the pin isn't floating on the 1.28" as assumed) and treated it as a 1.46". The threshold is now 1400 mV, and the reading is printed in the serial boot line.
+- **GPIO17 is only driven on the 1.46"**: v0.2.0 drove it high on both boards; on the 1.28" it's wired to something else.
+- **USB device name**: the knob now enumerates as "Input Knob" by "maker-iot" instead of `ESP32S3_DEV`. The build uses *USB CDC On Boot* disabled and the firmware starts the USB serial port itself; logs go through `USBSerial`.
+- **Accidental touches while turning**: touches are ignored for `TOUCH_IGNORE_AFTER_TURN_MS` (400 ms) after a detent, and a touch in progress when the knob turns is cancelled, so a resting finger no longer taps or swipes.
+
+### Changed
+- USB HID starts first in `setup()`, so the host begins enumerating while the display boots.
+
 ## [v0.2.0] - 2026-10-31
 
 Adds support for the **Elecrow CrowPanel 1.46" HMI ESP32 Rotary Display** (360x360 IPS screen, 8-LED ring) alongside the 1.28" model in a single auto-detecting firmware image, plus Linux tooling and CI release packaging.
@@ -41,5 +52,6 @@ First release of Input Knob, firmware for the Elecrow CrowPanel 1.28" ESP32-S3 r
 - The USB device name shows as `ESP32S3_DEV`.
 - Uploading from the Arduino IDE's Upload button (rather than `upload.sh`) leaves the screen dark until the knob is replugged.
 
+[v0.2.1]: https://github.com/bsommers/input-knob/compare/v0.2.0...v0.2.1
 [v0.2.0]: https://github.com/bsommers/input-knob/compare/v0.1.0...v0.2.0
 [v0.1.0]: https://github.com/bsommers/input-knob/releases/tag/v0.1.0

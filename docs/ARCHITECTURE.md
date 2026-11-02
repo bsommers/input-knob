@@ -229,11 +229,11 @@ graph TD
 **Decision**: A pin-change ISR with a quadrature table; the button stays polled because its timing is in the hundreds of milliseconds.
 **Consequences**: Smooth fast turns. The ISR uses `digitalRead`, which is fine here because the firmware never writes to flash at runtime apart from the occasional NVS write.
 
-### USB starts before `setup()`
+### USB serial started by the firmware, not the core
 
-**Context**: With *USB CDC On Boot* enabled, the core calls `USB.begin()` before `setup()`, so the `ARDUINO_USB_STARTED_EVENT` fires before any handler is registered. The first version therefore always showed "USB not connected".
-**Decision**: Query `static_cast<bool>(USB)` (started and mounted) instead of listening for events.
-**Consequences**: Correct status. The USB product name can't be changed in `setup()`, so macOS lists the device as `ESP32S3_DEV`.
+**Context**: With *USB CDC On Boot* enabled, the core calls `USB.begin()` before `setup()`. The `ARDUINO_USB_STARTED_EVENT` fired before any handler was registered (the first version always showed "USB not connected"), and the product name could no longer be changed, so macOS listed the device as `ESP32S3_DEV`.
+**Decision**: Build with *USB CDC On Boot* disabled. `usb_hid.cpp` creates the `USBSerial` port itself, sets the product and manufacturer names, then calls `USB.begin()` as the first thing in `setup()`. Link status is read from `static_cast<bool>(USB)` (started and mounted) instead of events.
+**Consequences**: The device enumerates as "Input Knob" by "maker-iot". Logs go through `USBSerial`; `Serial` is the hardware UART on GPIO43/44 and prints nothing over USB. The 1200-baud reset that uploads rely on still works, because `USBSerial` is a TinyUSB CDC port.
 
 ### Pin map and panel settings copied from Elecrow
 
@@ -276,8 +276,7 @@ graph TD
 
 - **One Bluetooth host at a time.** To switch, disconnect or forget the knob on the current host.
 - **Sleep recovery unverified.** The USB watchdog is implemented but hasn't yet been tested against a real Mac sleep/wake cycle.
-- **USB name** shows as `ESP32S3_DEV` rather than "Input Knob".
 - **Uploads can leave the board in download mode** (dark screen) because the core's reboot-to-bootloader sets `RTC_CNTL_FORCE_DOWNLOAD_BOOT` and esptool 4.6 doesn't clear it. `upload.sh` clears it; the Arduino IDE's Upload button doesn't, so replug after using it.
 - **Unused hardware**: the external UART/I2C header rail (powered, but nothing reads it).
-- **Touch while turning**: the touch panel sits inside the knob, so a finger resting on the glass while turning can register as a tap or swipe.
+- **Touch while turning**: the touch panel sits inside the knob, so a finger resting on the glass while turning used to register as a tap or swipe. Touches are now ignored for `TOUCH_IGNORE_AFTER_TURN_MS` (400 ms) after a detent, and a touch already in progress when the knob turns is cancelled.
 - **Battery level** over Bluetooth is a fixed 100%; the board has no battery.

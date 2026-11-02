@@ -22,6 +22,7 @@
 #include "macros.h"
 #include "touch.h"
 #include "ui.h"
+#include "usb_hid.h"
 
 enum class Mode : uint8_t { Volume, Scroll, Macro, Trackpad, Count };
 
@@ -84,6 +85,7 @@ static void scrollBy(int lines) {
 }
 
 static void onTurn(int detents) {
+  touchSuppress();
   uiTurn(detents);
   ledsTurn(detents);
   switch (mode) {
@@ -205,7 +207,7 @@ static void onTouch(const TouchUpdate &touch) {
 }
 
 void setup() {
-  Serial.begin(115200);
+  hid::begin();  // first, so the host starts enumerating while the rest boots
   settings.begin("input-knob");
   macShortcuts = settings.getBool("mac", true);
 
@@ -214,19 +216,18 @@ void setup() {
   ledsBegin();
   knobBegin();
   touchOk = touchBegin();
-  if (!touchOk) Serial.println("[touch] CST816 not responding");
-  hid::begin();
+  if (!touchOk) USBSerial.println("[touch] CST816 not responding");
   showMode();
   uiSetLink(shownLink);
 }
 
 void loop() {
-  if (!bannerPrinted && Serial) {
+  if (!bannerPrinted && USBSerial) {
     bannerPrinted = true;
-    Serial.printf("[board] CrowPanel %s (%dx%d, %d LEDs, touch=%s)\n",
+    USBSerial.printf("[board] CrowPanel %s (%dx%d, %d LEDs, touch=%s, gpio17=%dmV)\n",
                   boardModel() == BoardModel::CrowPanel146 ? "1.46\"" : "1.28\"",
                   boardScreenSize(), boardScreenSize(), boardLedCount(),
-                  touchOk ? "ok" : "none");
+                  touchOk ? "ok" : "none", boardDetectMillivolts());
   }
   const int detents = knobTakeDetents();
   if (detents != 0) onTurn(detents);

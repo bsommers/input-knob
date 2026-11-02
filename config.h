@@ -23,6 +23,11 @@ constexpr uint8_t BACKLIGHT_PERCENT = 60;
 constexpr int16_t TOUCH_TAP_SLOP_PX = 12;
 constexpr int16_t TOUCH_SWIPE_MIN_PX = 50;
 
+// Touches are ignored for this long after each knob detent (and a touch in
+// progress is dropped), so a finger resting on the glass while turning
+// doesn't register as a tap or swipe.
+constexpr uint32_t TOUCH_IGNORE_AFTER_TURN_MS = 400;
+
 // Trackpad cursor speed: pixels moved = finger delta x (gain + acceleration x speed).
 constexpr float TRACKPAD_GAIN = 2.0f;
 constexpr float TRACKPAD_ACCELERATION = 0.15f;

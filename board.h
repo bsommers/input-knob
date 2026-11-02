@@ -36,3 +36,4 @@ enum class BoardModel { CrowPanel128, CrowPanel146 };
 BoardModel boardModel();
 int boardScreenSize();
 int boardLedCount();
+int boardDetectMillivolts();  // GPIO17 reading used by auto-detect, -1 if not run
